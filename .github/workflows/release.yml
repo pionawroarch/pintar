@@ -1,6 +1,7 @@
 name: Instalatory (Windows / macOS / Linux)
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
 permissions:
