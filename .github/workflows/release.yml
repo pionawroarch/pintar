@@ -16,7 +16,7 @@ jobs:
       - name: Sprawdź, czy three.min.js jest w paczce
         shell: bash
         run: test -f three.min.js
-      - run: npx electron-builder --win --publish ${{ startsWith(github.ref, 'refs/tags/') && 'always' || 'never' }}
+      - run: npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
