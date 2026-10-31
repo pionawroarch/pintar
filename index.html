@@ -188,24 +188,26 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
 /* ekran ładowania: młotek bije w ziemię (same animacje transform/opacity – działają, gdy skrypt jeszcze się wykonuje) */
 #loader{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(ellipse at 50% 40%,#2a2016,#0e0a06 75%);color:#f0c75e;font-family:"Pixelify Sans","Courier New",monospace;transition:opacity .35s}
 #loader.out{opacity:0;pointer-events:none}
-#loader svg{width:200px;height:150px;image-rendering:pixelated;overflow:visible}
+#loader .ld-scene{position:relative;width:200px;height:150px;transform:scale(1.5);margin-bottom:30px}
+#loader .ld-scene div{position:absolute}
 #loader .ld-t{font-size:26px;letter-spacing:.08em;text-shadow:3px 3px 0 #3a2410;margin:0}
 #loader .ld-t i{font-style:normal;animation:ldDot 1.2s steps(1) infinite}#loader .ld-t i:nth-child(2){animation-delay:.2s}#loader .ld-t i:nth-child(3){animation-delay:.4s}
 @keyframes ldDot{0%{opacity:.15}33%{opacity:1}100%{opacity:1}}
-#ldHam{transform-origin:62px 112px;transform-box:view-box;animation:ldHit 1s cubic-bezier(.5,0,.8,.4) infinite}
-@keyframes ldHit{0%{transform:rotate(-62deg)}55%{transform:rotate(-62deg)}78%{transform:rotate(14deg)}84%{transform:rotate(10deg)}100%{transform:rotate(-62deg)}}
-.ldD{opacity:0;animation:ldDust 1s linear infinite}
+#ldHam{left:68px;top:48px;width:0;height:0;transform-origin:0 0;will-change:transform;animation:ldHit 1s linear infinite}
+@keyframes ldHit{0%{transform:rotate(130deg);animation-timing-function:ease-out}42%{transform:rotate(142deg);animation-timing-function:cubic-bezier(.6,0,.9,.5)}66%{transform:rotate(-25deg)}71%{transform:rotate(-17deg);animation-timing-function:ease-in-out}78%{transform:rotate(-25deg);animation-timing-function:ease-in-out}100%{transform:rotate(130deg)}}
+.ldD{opacity:0;will-change:transform,opacity;animation:ldDust 1s linear infinite}
 .ldD.l{--dx:-26px}.ldD.r{--dx:26px}.ldD.s{--dx:-12px}.ldD.t{--dx:14px}
-@keyframes ldDust{0%,76%{opacity:0;transform:translate(0,0)}78%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--dx),-22px)}}
+@keyframes ldDust{0%,65%{opacity:0;transform:translate(0,0)}67%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--dx),-24px)}}
 @media (prefers-reduced-motion:reduce){#ldHam,.ldD{animation-duration:3s}}
 </style>
-<div id="loader" role="status" aria-label="Ładuję"><svg viewBox="0 0 200 150" shape-rendering="crispEdges" aria-hidden="true">
-<rect x="20" y="118" width="160" height="8" fill="#5d9a34"/><rect x="20" y="126" width="160" height="22" fill="#6b4a2c"/><rect x="20" y="118" width="160" height="2" fill="#7fb840"/>
-<rect x="34" y="132" width="8" height="6" fill="#4d3620"/><rect x="92" y="136" width="10" height="6" fill="#4d3620"/><rect x="140" y="130" width="8" height="6" fill="#4d3620"/>
-<rect x="120" y="106" width="16" height="12" fill="#8a8f98"/><rect x="124" y="102" width="8" height="4" fill="#8a8f98"/>
-<g id="ldHam"><rect x="59" y="46" width="6" height="68" fill="#8a5a2c"/><rect x="59" y="46" width="2" height="68" fill="#a8742e"/><rect x="63" y="46" width="2" height="68" fill="#5e3a1a"/><rect x="42" y="24" width="40" height="22" fill="#8c929c"/><rect x="42" y="24" width="40" height="4" fill="#b8bec8"/><rect x="42" y="42" width="40" height="4" fill="#5c626c"/><rect x="38" y="28" width="4" height="14" fill="#6f7580"/><rect x="82" y="28" width="4" height="14" fill="#6f7580"/></g>
-<rect class="ldD l" x="76" y="112" width="6" height="6" fill="#c9a66b"/><rect class="ldD r" x="84" y="110" width="6" height="6" fill="#a8845a"/><rect class="ldD s" x="70" y="114" width="4" height="4" fill="#7fb840"/><rect class="ldD t" x="90" y="114" width="4" height="4" fill="#c9a66b"/>
-</svg><p class="ld-t">Ładuję<i>.</i><i>.</i><i>.</i></p></div>
+<div id="loader" role="status" aria-label="Ładuję"><div class="ld-scene" aria-hidden="true">
+<div style="left:20px;top:118px;width:160px;height:8px;background:#5d9a34"></div><div style="left:20px;top:118px;width:160px;height:2px;background:#7fb840"></div>
+<div style="left:20px;top:126px;width:160px;height:22px;background:#6b4a2c"></div>
+<div style="left:34px;top:132px;width:8px;height:6px;background:#4d3620"></div><div style="left:92px;top:136px;width:10px;height:6px;background:#4d3620"></div><div style="left:140px;top:130px;width:8px;height:6px;background:#4d3620"></div>
+<div style="left:128px;top:106px;width:16px;height:12px;background:#8a8f98"></div><div style="left:132px;top:102px;width:8px;height:4px;background:#8a8f98"></div>
+<div id="ldHam"><div style="left:-3px;top:0;width:6px;height:56px;background:#8a5a2c;box-shadow:inset 2px 0 #a8742e,inset -2px 0 #5e3a1a"></div><div style="left:-20px;top:46px;width:40px;height:22px;background:#8c929c;box-shadow:inset 0 4px #b8bec8,inset 0 -4px #5c626c,inset 4px 0 #6f7580,inset -4px 0 #6f7580"></div></div>
+<div class="ldD l" style="left:86px;top:112px;width:6px;height:6px;background:#c9a66b"></div><div class="ldD r" style="left:94px;top:110px;width:6px;height:6px;background:#a8845a"></div><div class="ldD s" style="left:90px;top:114px;width:4px;height:4px;background:#7fb840"></div><div class="ldD t" style="left:98px;top:114px;width:4px;height:4px;background:#c9a66b"></div>
+</div><p class="ld-t">Ładuję<i>.</i><i>.</i><i>.</i></p></div>
 <script>setTimeout(function(){var l=document.getElementById('loader');if(l)l.remove()},25000)</script>
 
 <div id="app">
@@ -267,7 +269,7 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
+<script type="text/plain" id="gameSrc">
 'use strict';
 /* ============================== constants ============================== */
 const TILE=16, TEX=7, MW=576, MH=448, DAY=300;
@@ -6301,6 +6303,7 @@ window.addEventListener('keydown',e=>{
   if(document.body.classList.contains('inMenu')&&!e.ctrlKey&&!e.metaKey)return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'||e.target.tagName==='TEXTAREA')return;
   const k=e.key.toLowerCase();
+  if(e.key==='F3'){e.preventDefault();perfShow(!PERF.on);return}
   if(k==='r'){if(tool.startsWith('b:')){NEXTROT=(NEXTROT+1)%4;onToolChange();setTool(tool)}else if(sel&&sel.kind==='building'){const b=S.buildings[sel.id];if(b&&!b.zw)rotateBuilding(b);refreshPanel(true)}return}
   if(k==='t'){if(tool.startsWith('b:')){const t2=tool.slice(2);if(t2==='mur'||t2==='mur_h')return;NEXTV[t2]=(nextVarOf(t2)+1)%NVAR(t2);onToolChange();setTool(tool)}else if(sel&&sel.kind==='building'){const b=S.buildings[sel.id];if(b&&!b.zw&&b.type!=='mur'&&b.type!=='brama'){b.v=((b.v||0)+1)%NVAR(b.type);refreshPanel(true)}}return}
   if(['w','a','s','d','q','e','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){keys.add(k);e.preventDefault();return}
@@ -6776,18 +6779,26 @@ let newArmed=0;
 document.getElementById('bNew').onclick=e=>{const b=e.currentTarget;if(Date.now()-newArmed<3000){newGame();afterWorldReset();{const bt=document.getElementById('bFree');bt.classList.remove('on');bt.textContent='Swobodna budowa'}sel=null;centerOn(MW*TILE/2,MH*TILE/2);refreshPanel(true);msg(`Założono nową osadę: ${S.town}`,'good');b.textContent='Nowa gra';newArmed=0}else{newArmed=Date.now();b.textContent='Na pewno?';setTimeout(()=>{b.textContent='Nowa gra'},3000)}};
 
 /* ============================== loop ============================== */
+/* ---- F3: wskaźnik wydajności ---- */
+const PERF={on:false,fps:0,ms:0,sim:0,sync:0,rend:0,acc:0,n:0,t0:0,gpu:'',el:null};window.PERF=PERF;
+function perfGpu(){try{const gl=renderer.getContext(),x=gl.getExtension('WEBGL_debug_renderer_info');return x?gl.getParameter(x.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER)}catch(e){return '?'}}
+function perfShow(on){PERF.on=on;if(on&&!PERF.el){const d=document.createElement('pre');d.id='perf';d.style.cssText='position:fixed;left:8px;top:96px;z-index:60;margin:0;padding:6px 9px;background:rgba(14,10,6,.78);color:#f0e2b4;font:12px/1.35 "Courier New",monospace;border:1px solid #6a4a28;pointer-events:none;white-space:pre';document.body.appendChild(d);PERF.el=d;PERF.gpu=perfGpu()}if(PERF.el)PERF.el.hidden=!on}
+function perfTick(ms,sim,sync,rend){const P=PERF;P.acc+=ms;P.n++;P.sim=P.sim*.9+sim*.1;P.sync=P.sync*.9+sync*.1;P.rend=P.rend*.9+rend*.1;P.ms=P.ms*.9+ms*.1;
+  if(P.acc>=500){P.fps=P.n*1000/P.acc;P.acc=0;P.n=0;if(P.on&&P.el){const I=renderer.info,k=S.buildings?Object.keys(S.buildings).length:0;
+    P.el.textContent=`FPS ${P.fps.toFixed(0)}  (${P.ms.toFixed(1)} ms)\nSymulacja ${P.sim.toFixed(1)} ms\nAktualiz. obiektów ${P.sync.toFixed(1)} ms\nRysowanie (CPU) ${P.rend.toFixed(1)} ms\nDraw calls ${I.render.calls}  Trójkąty ${(I.render.triangles/1000).toFixed(0)}k\nGeometrie ${I.memory.geometries}  Tekstury ${I.memory.textures}\nOsadnicy ${S.settlers.length}  Budynki ${k}\nGPU: ${P.gpu}`}}}
 let lastT=0,acc=0,uiT=0,wT=0;
 function frame(now){
+  const pf0=performance.now();
   const dt=Math.min(.1,(now-lastT)/1000||0);lastT=now;const t=now/1000;
   if(keys.size){const ps=camS.dist*.85*dt,fx=-Math.sin(camS.yaw),fz=-Math.cos(camS.yaw),rx=Math.cos(camS.yaw),rz=-Math.sin(camS.yaw);
     if(keys.has('w')||keys.has('arrowup')){camS.tx+=fx*ps;camS.tz+=fz*ps}if(keys.has('s')||keys.has('arrowdown')){camS.tx-=fx*ps;camS.tz-=fz*ps}
     if(keys.has('d')||keys.has('arrowright')){camS.tx+=rx*ps;camS.tz+=rz*ps}if(keys.has('a')||keys.has('arrowleft')){camS.tx-=rx*ps;camS.tz-=rz*ps}
     if(keys.has('q'))camS.yaw+=dt*1.8;if(keys.has('e'))camS.yaw-=dt*1.8;clampCam()}
-  if(!EVT.open)eventTick();acc+=dt*speed;let n=0;const STEP=1/30;while(acc>=STEP&&n<12){update(STEP);acc-=STEP;n++}if(n>=12)acc=0;
+  if(!EVT.open)eventTick();acc+=dt*speed;let n=0;const STEP=1/30;while(acc>=STEP&&n<12){update(STEP);acc-=STEP;n++}if(n>=12)acc=0;const pf1=performance.now();
   if(terrDirty){terrDirty=false;buildTerrain3D()}
   updateSky();syncDecor();syncObjs(t);syncCrops();syncBuildings(t,dt);syncPiers();syncSettlers(dt,t);syncMerchant(dt);syncWild(dt*Math.min(speed,2));syncAnimals(t,dt);syncFish(t,dt);syncShips(t);syncFx(t);syncOverlay();placeCamera();
   try{AUDIO.tick(dt)}catch(e){}
-  renderer.render(scene,camera);syncLabels();
+  const pf2=performance.now();renderer.render(scene,camera);syncLabels();const pf3=performance.now();perfTick(pf3-pf0,pf1-pf0,pf2-pf1,pf3-pf2);
   uiT+=dt;if(uiT>.3){uiT=0;updateHUD();refreshPanel(false)}
   wT+=dt;if(wT>2){wT=0;if(!workersEl.hidden&&!workersEl.contains(document.activeElement))renderWorkers()}
   requestAnimationFrame(frame);
@@ -7063,3 +7074,4 @@ function toolBoxes(kind,key){const CROPCOL={wheat:['#e0c050','#c8a838'],corn:['#
   return B}
 function icon3d(kind,key,fallback){const _ti=window._ti||(window._ti={});const k=kind+':'+key;if(_ti[k])return _ti[k];try{return _ti[k]=isoRender(toolBoxes(kind,key),16,16,40)}catch(e){return _ti[k]=fallback?iconURL(fallback()):''}}
 </script>
+<script>(function(){function run(){var s=document.createElement('script');s.text=document.getElementById('gameSrc').textContent;document.body.appendChild(s)}requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(run,80)})})})()</script>
