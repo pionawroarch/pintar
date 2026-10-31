@@ -683,13 +683,13 @@ function newGame(seed,town){
   paintTerrain();objDirty=fieldDirty=decorDirty=true;
 }
 /* tryb testowy „Duże miasto”: 400 budynków i 306 osadników rozsianych wokół środka mapy (do pomiaru wydajności, F3) */
-function bigCity(){
+function bigCity(NB=400,NS=300){const K=Math.sqrt(NB/400);
   const types=['dom','chalupa','kamienica','blizniak','dom_kupca','chata','magazyn','piekarnia','kuznia','karczma','kaplica','stajnia','mlyn','studnia','latarnia'].filter(t=>BDEF[t]);
   const cx=MW>>1,cy=MH>>1;let placed=0;
-  for(let i=0;i<20000&&placed<400;i++){const t=types[i%types.length],x=cx-130+Math.floor(rnd()*260),y=cy-100+Math.floor(rnd()*200);
+  for(let i=0;i<60000&&placed<NB;i++){const t=types[i%types.length],x=cx-Math.round(130*K)+Math.floor(rnd()*Math.round(260*K)),y=cy-Math.round(100*K)+Math.floor(rnd()*Math.round(200*K));
     try{if(canPlace(t,x,y,0)){placeBlueprint(t,x,y,true,Math.floor(rnd()*NVAR(t)),0);placed++}}catch(e){}}
   const jobs=['robotnik','drwal','rolnik','gornik','budowniczy'];let n=0;
-  for(let i=0;i<8000&&n<300;i++){const x=cx-130+Math.floor(rnd()*260),y=cy-100+Math.floor(rnd()*200);if(passLand(x,y)){addSettler(x,y,jobs[n%5]);n++}}
+  for(let i=0;i<20000&&n<NS;i++){const x=cx-Math.round(130*K)+Math.floor(rnd()*Math.round(260*K)),y=cy-Math.round(100*K)+Math.floor(rnd()*Math.round(200*K));if(passLand(x,y)){addSettler(x,y,jobs[n%5]);n++}}
   assignHomes();return [placed,S.settlers.length]}
 function addSettler(x,y,job,sex){
   sex=sex||(rnd()<.5?'m':'f');const L=sex==='m'?NM:NF;const sn=SURN[(rnd()*SURN.length)|0],name=L[S.nameIdx[sex]++%L.length]+' '+sn[sex==='m'?0:1];
@@ -710,7 +710,9 @@ function passable(x,y){
   return true;
 }
 const passLand=(x,y)=>passable(x,y)&&S.ground[idx(x,y)]!==WA;
-function spotFree(x,y,self){for(const o of S.settlers){if(o===self||o.hidden)continue;if(Math.abs(o.x-x)<.75&&Math.abs(o.y-y)<.75)return false;const t=o.task;if(t&&t.moving&&t.tx===x&&t.ty===y)return false}return true}
+const OAS={},OAC={};function oacc(k,f,a,b,c,d){const t=performance.now();try{return f(a,b,c,d)}finally{OAS[k]=(OAS[k]||0)+performance.now()-t;OAC[k]=(OAC[k]||0)+1}}
+function spotFree(x,y,self){return oacc('spot',spotFree0,x,y,self)}
+function spotFree0(x,y,self){for(const o of S.settlers){if(o===self||o.hidden)continue;if(Math.abs(o.x-x)<.75&&Math.abs(o.y-y)<.75)return false;const t=o.task;if(t&&t.moving&&t.tx===x&&t.ty===y)return false}return true}
 function removeObj(o){delete S.objs[o.id];if(objGrid[idx(o.x,o.y)]===o.id)objGrid[idx(o.x,o.y)]=0;objDirty=decorDirty=true}
 function addObj(type,x,y){const o={id:nid(),type,x,y,res:0,mark:0};if(type==='sapling')o.growth=0;if(type==='bush'){o.berries=1;o.regrow=0}if(type==='stump')o.life=1;S.objs[o.id]=o;objGrid[idx(x,y)]=o.id;objDirty=decorDirty=true;return o}
 function dropItem(x,y,res,amt){
@@ -736,7 +738,8 @@ function hPop(){const top=HN[0];const n=HN[--hLen],f=HF[hLen];if(hLen>0){let i=0
 const pcS=new Uint32Array(MW*MH),pcV=new Uint8Array(MW*MH);let pcG=1;
 function passC(x,y){if(x<0||y<0||x>=MW||y>=MH)return false;const i=y*MW+x;if(pcS[i]===pcG)return pcV[i]===1;const v=passable(x,y);pcS[i]=pcG;pcV[i]=v?1:0;return v}
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],DX8=[1,-1,0,0,1,1,-1,-1],DY8=[0,0,1,-1,1,-1,1,-1];
-function findPath(sx2,sy2,goal,tx,ty){
+function findPath(sx2,sy2,goal,tx,ty){const _t=performance.now();try{return findPath0(sx2,sy2,goal,tx,ty)}finally{const d=performance.now()-_t;if(d>(OTM.PATH||0))OTM.PATH=d;OTM.PATHn=(OTM.PATHn||0)+1}}
+function findPath0(sx2,sy2,goal,tx,ty){
   sx2=Math.max(0,Math.min(MW-1,sx2));sy2=Math.max(0,Math.min(MH-1,sy2));
   gen++;hLen=0;const s=sy2*MW+sx2;gA[s]=0;stamp[s]=gen;came[s]=-1;
   const hh=(x,y)=>{const dx=Math.abs(x-tx),dy=Math.abs(y-ty);return (Math.max(dx,dy)+.414*Math.min(dx,dy))*.7};
@@ -885,7 +888,7 @@ function freeTileNear(x,y){for(let r=1;r<12;r++)for(let j=-r;j<=r;j++)for(let i=
 
 /* ============================== workplaces ============================== */
 const slotsOf=b=>BDEF[b.type].slots||0;
-const workersOf=b=>S.settlers.filter(s=>s.work===b.id);
+const workersOf0=b=>S.settlers.filter(s=>s.work===b.id);const workersOf=b=>oacc('workers',workersOf0,b);
 function jobOfBuilding(b){const d=BDEF[b.type];return d.craft?d.craft.job:d.job}
 const workplaces=()=>Object.values(S.buildings).filter(b=>b.built&&slotsOf(b));
 function leaveWorkTask(s){const t=s.task;if(t&&s.work&&t.bid===s.work&&t.type!=='sleep')abort(s)}
@@ -906,8 +909,8 @@ function autoAssign(b){
 
 /* ============================== homes, families, relations ============================== */
 const houses=()=>Object.values(S.buildings).filter(b=>b.built&&BDEF[b.type].beds);
-const residents=h=>S.settlers.filter(s=>s.home===h.id);
-const sById=id=>S.settlers.find(s=>s.id===id);
+const residents0=h=>S.settlers.filter(s=>s.home===h.id);const residents=h=>oacc('resid',residents0,h);
+const sById0=id=>S.settlers.find(s=>s.id===id);const sById=id=>oacc('sById',sById0,id);
 function totalBeds(){return houses().reduce((a,h)=>a+BDEF[h.type].beds,0)}
 const rkey=(a,b)=>a<b?a+'-'+b:b+'-'+a;
 const relGet=(a,b)=>S.rel[rkey(a.id,b.id)]||0;
@@ -1769,7 +1772,7 @@ const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(30,1,.5,700);
 const camS={tx:MW/2,tz:MH/2,yaw:.6,pitch:.9,dist:44};
 let VW=1,VH=1;
-function resize(){const r=cv.getBoundingClientRect();VW=Math.max(1,r.width);VH=Math.max(1,r.height);renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.setSize(VW,VH,false);camera.aspect=VW/VH;camera.updateProjectionMatrix()}
+function resize(){const r=cv.getBoundingClientRect();VW=Math.max(1,r.width);VH=Math.max(1,r.height);renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2)*(window.GFXRES||1));renderer.setSize(VW,VH,false);camera.aspect=VW/VH;camera.updateProjectionMatrix()}
 function clampCam(){camS.tx=Math.max(0,Math.min(MW,camS.tx));camS.tz=Math.max(0,Math.min(MH,camS.tz));camS.dist=Math.max(6,Math.min(130,camS.dist));camS.pitch=Math.max(.3,Math.min(1.45,camS.pitch))}
 function placeCamera(){const cp=Math.cos(camS.pitch);camera.position.set(camS.tx+Math.sin(camS.yaw)*cp*camS.dist,Math.sin(camS.pitch)*camS.dist,camS.tz+Math.cos(camS.yaw)*cp*camS.dist);camera.lookAt(camS.tx,.3,camS.tz)}
 function centerOn(px,py){camS.tx=px/TILE;camS.tz=py/TILE;clampCam()}
@@ -1802,15 +1805,26 @@ const DROPGEO=new THREE.BoxGeometry(1.1/16,1.1/16,1.1/16),DROPMAT=new THREE.Mesh
 /* ---------- voxel helpers ---------- */
 const V=1/16;
 const matV=new THREE.MeshLambertMaterial({vertexColors:true});
+const HFC={on:(function(){try{return localStorage.getItem('hf')!=='0'}catch(e){return true}})(),total:0,removed:0};
 function voxGeo(boxes,jit=.06){
   const pos=[],nor=[],col=[],c=new THREE.Color();
+  const n=boxes.length,E=1e-4,lo=new Float32Array(n*3),hi=new Float32Array(n*3),ok=new Uint8Array(n);
+  for(let i=0;i<n;i++){const b=boxes[i];if(b[3]>0&&b[4]>0&&b[5]>0){ok[i]=1;lo[i*3]=b[0];lo[i*3+1]=b[1];lo[i*3+2]=b[2];hi[i*3]=b[0]+b[3];hi[i*3+1]=b[1]+b[4];hi[i*3+2]=b[2]+b[5]}}
+  /* ściana f boxa i jest ukryta, gdy inny box zasłania ją w całości (przecina płaszczyznę ściany i obejmuje jej prostokąt) */
+  const hidden=(i,f)=>{const a=f>>1,pl=(f&1)?lo[i*3+a]:hi[i*3+a],u=(a+1)%3,w=(a+2)%3,sg=(f&1)?-1:1;
+    const u0=lo[i*3+u]-E,u1=hi[i*3+u]+E,w0=lo[i*3+w]-E,w1=hi[i*3+w]+E;
+    for(let j=0;j<n;j++){if(j===i||!ok[j])continue;
+      if(lo[j*3+u]>u0||hi[j*3+u]<u1-2*E||lo[j*3+w]>w0||hi[j*3+w]<w1-2*E)continue;
+      if(sg>0){if(lo[j*3+a]<=pl+E&&hi[j*3+a]>pl+E)return true}else{if(hi[j*3+a]>=pl-E&&lo[j*3+a]<pl-E)return true}}
+    return false};
   boxes.forEach((b,bi)=>{
-    if(!(b[3]>0&&b[4]>0&&b[5]>0))return;
+    if(!ok[bi])return;
     const g=new THREE.BoxGeometry(b[3]*V,b[4]*V,b[5]*V).toNonIndexed();
     g.translate((b[0]+b[3]/2)*V,(b[1]+b[4]/2)*V,(b[2]+b[5]/2)*V);
     c.set(b[6]);const k=1+(hash(bi,boxes.length,(b[3]*7)|0)-.5)*jit;
-    const p=g.attributes.position.array,n=g.attributes.normal.array;
-    for(let i=0;i<p.length;i+=3){pos.push(p[i],p[i+1],p[i+2]);nor.push(n[i],n[i+1],n[i+2]);col.push(c.r*k,c.g*k,c.b*k)}
+    const p=g.attributes.position.array,nn=g.attributes.normal.array;
+    for(let f=0;f<6;f++){HFC.total++;if(HFC.on&&n>1&&hidden(bi,f)){HFC.removed++;continue}
+      for(let i=f*18;i<f*18+18;i+=3){pos.push(p[i],p[i+1],p[i+2]);nor.push(nn[i],nn[i+1],nn[i+2]);col.push(c.r*k,c.g*k,c.b*k)}}
     g.dispose();
   });
   const geo=new THREE.BufferGeometry();
@@ -5227,7 +5241,7 @@ function shopExtras(r,P,v,Wv,Dv){const B=r.B,h=(r.holes&&r.holes[0])||[Wv/2-5,1,
 
 /* ---------- instanced world ---------- */
 const dummy=new THREE.Object3D(),dummyH=new THREE.Object3D();dummyH.rotation.order='YXZ';
-function IM(geo,mat,cap,shadow=true){const m=new THREE.InstancedMesh(geo,mat,cap);m.castShadow=shadow;m.receiveShadow=true;m.frustumCulled=false;m.count=0;scene.add(m);return m}
+const ALLIM=[];function IM(geo,mat,cap,shadow=true){const m=new THREE.InstancedMesh(geo,mat,cap);ALLIM.push(m);m.castShadow=shadow;m.receiveShadow=true;m.frustumCulled=false;m.count=0;scene.add(m);return m}
 const OBJCAP=30000;const objIM={},objIds={};
 for(const k in OBJGEO){objIM[k]=IM(OBJGEO[k],matV,OBJCAP);objIM[k].userData.kind=k;objIds[k]=[]}
 const MARKGEO=new THREE.OctahedronGeometry(.16,0);const markIM={};
@@ -5250,18 +5264,99 @@ function glowTex(){const c=mk(64,64),x=c.getContext('2d');const g=x.createRadial
 const glowMat=new THREE.MeshBasicMaterial({map:glowTex(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:0,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4});
 const glowGeo=new THREE.PlaneGeometry(1,1);glowGeo.rotateX(-Math.PI/2);
 const glowIM=IM(glowGeo,glowMat,700,false);glowIM.receiveShadow=false;glowIM.renderOrder=3;
+/* ---------- optymalizacje (przełączniki w window.OPT do testów A/B) ---------- */
+const OPT={decorMs:2.5,moveK:.2,shadowMove:2,hideEmpty:true,settlerShadowR:28,shadowEvery:2,smallShadow:false};window.OPT=OPT;
+let optFrame=0,optCam={x:0,z:0,d:0,y:0};
+const OTM={},OTS={};function optT(k,f){const t0=performance.now();f();const d=performance.now()-t0;if(d>(OTM[k]||0))OTM[k]=d}
+function optTShow(){return Object.keys(OTS).map(k=>k+' '+OTS[k].toFixed(0)).join('  ')}
+let optAcc='';let optN=0,optC25=0,optC50=0,optC200=0,optStat='';OPT.auto=false;let optLastT=0,optMax=0,optMaxShow=0,optMaxT=0,optAng=0;
+function optPre(){optRFtick();farFlush();const nowT=performance.now();if(optLastT){const ft=nowT-optLastT;if(ft>optMax)optMax=ft;optN++;if(ft>25)optC25++;if(ft>50)optC50++;if(ft>200){optC200++;OPT.slow=(OPT.slow||[]);OPT.slow.push((nowT/1000).toFixed(1)+'s/'+ft.toFixed(0)+'ms');if(OPT.slow.length>8)OPT.slow.shift()}}optLastT=nowT;if(nowT-optMaxT>2000){optMaxShow=optMax;optMax=0;optMaxT=nowT;optAcc=Object.keys(OAS).map(k=>k+' '+OAS[k].toFixed(0)+'ms/'+OAC[k]).join('  ');for(const k in OAS){OAS[k]=0;OAC[k]=0}optStat=optN+' kl, >25ms:'+optC25+' >50ms:'+optC50+' >200ms:'+optC200;optN=optC25=optC50=optC200=0;for(const k in OTM){OTS[k]=OTM[k];OTM[k]=0}}
+  if(OPT.auto){optAng+=.012;const ps=camS.dist*.5/60;camS.tx+=Math.cos(optAng)*ps;camS.tz+=Math.sin(optAng)*ps;clampCam()}
+  const he=OPT.hideEmpty;for(const m of ALLIM)m.visible=he?m.count>0:true;
+  const mv=camS.tx!==optCam.x||camS.tz!==optCam.z||camS.dist!==optCam.d||camS.yaw!==optCam.y;optCam={x:camS.tx,z:camS.tz,d:camS.dist,y:camS.yaw};
+  optFrame++;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=OPT.shadowEvery<=1||(mv?optFrame%(OPT.shadowMove||1)===0:optFrame%OPT.shadowEvery===0);
+}
+function optSettlerShadow(rec,s){const dx=s.x-camS.tx,dz=s.y-camS.tz,R=OPT.settlerShadowR,near=dx*dx+dz*dz<R*R;if(rec.shN!==near||rec.shT!==rec.tool||rec.shC!==rec.carry){rec.shN=near;rec.shT=rec.tool;rec.shC=rec.carry;rec.g.traverse(o=>{if(o.isMesh)o.castShadow=near})}}
+function optSmall(){const v=OPT.smallShadow;for(const r in itemIM)itemIM[r].castShadow=v;for(const c in cropIM)for(const m of cropIM[c])m.castShadow=v;if(decoIM.reeds)decoIM.reeds.castShadow=v}
+window.optApply=optSmall;optSmall();
+/* LOD osadników: 0 = pełny model, 1 = średni (nogi animowane + reszta jedną bryłą), 2 = daleki (cały osadnik jedną bryłą) */
+OPT.midD=22;OPT.lodD=45;const LODPRESETS=[[22,45],[30,60],[50,90],[1e9,1e9]];const _lc=new THREE.Color();
+function mergeGroups(rec,groups){const pos=[],nor=[],col=[];const nm=new THREE.Matrix3(),v=new THREE.Vector3();const skip=new Set([rec.toolSlot,rec.lampSlot,rec.carrySlot,rec.lod,rec.mid]);
+  const walk=(o,M)=>{if(skip.has(o))return;const Mc=M.clone().multiply(o.matrix);
+    if(o.isMesh&&o.geometry&&o.visible){let g=o.geometry;g=g.index?g.toNonIndexed():g;const p=g.attributes.position,n=g.attributes.normal,ca=g.attributes.color;nm.getNormalMatrix(Mc);
+      const mc=o.material&&o.material.color?o.material.color:_lc.set(0xffffff);
+      for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(Mc);pos.push(v.x,v.y,v.z);if(n){v.fromBufferAttribute(n,i).applyMatrix3(nm).normalize();nor.push(v.x,v.y,v.z)}else nor.push(0,1,0);
+        if(ca)col.push(ca.getX(i)*mc.r,ca.getY(i)*mc.g,ca.getZ(i)*mc.b);else col.push(mc.r,mc.g,mc.b)}
+      if(g!==o.geometry)g.dispose()}
+    for(const c of o.children){c.updateMatrix();walk(c,Mc)}};
+  const I=new THREE.Matrix4();for(const g of groups){g.updateMatrix();walk(g,I)}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));geo.computeBoundingSphere();
+  const m=new THREE.Mesh(geo,matV);m.castShadow=rec.shN!==false;m.visible=false;rec.body.add(m);return m}
+function optDisposeRec(rec){if(rec.mid&&rec.mid.geometry){rec.mid.geometry.dispose();rec.mid.geometry=null}if(rec.lod&&rec.lod.geometry){rec.lod.geometry.dispose();rec.lod.geometry=null}if(rec.bobM){scene.remove(rec.bobM)}}
+OPT.farIM=true;let FARN=0,FARDIRTY=false;
+const FARGEO_C=voxGeo([[-3,5.5,-1.7,6,6,3.4,'#ffffff'],[-4.6,5.8,-1,1.6,5,2,'#ffffff'],[3,5.8,-1,1.6,5,2,'#ffffff']],0);
+const FARGEO_F=voxGeo([[-2.4,0,-1,4.8,5.6,2,'#4a3a2a'],[-1.9,11.3,-1.6,3.8,3.6,3.2,'#d9a98a'],[-1.9,13.6,-1.7,3.8,1.4,3.4,'#5a4028']],0);
+const farC=IM(FARGEO_C,matV,1500,false),farF=IM(FARGEO_F,matV,1500,false);
+function farPut(rec,s,sc){if(FARN>=1500)return;dummy.position.copy(rec.g.position);dummy.rotation.set(0,rec.g.rotation.y,0);dummy.scale.setScalar(sc);dummy.updateMatrix();
+  farC.setMatrixAt(FARN,dummy.matrix);farF.setMatrixAt(FARN,dummy.matrix);if(!rec.farCol){const L=LOOK[s.job]||LOOK.robotnik;rec.farCol=new THREE.Color(s.child?KIDSHIRT[s.id%KIDSHIRT.length]:L.shirt)}
+  farC.setColorAt(FARN,rec.farCol);FARN++;FARDIRTY=true}
+function farFlush(){if(!FARDIRTY)return;FARDIRTY=false;farC.count=farF.count=FARN;farC.instanceMatrix.needsUpdate=farF.instanceMatrix.needsUpdate=true;if(farC.instanceColor)farC.instanceColor.needsUpdate=true}
+function lodApply(rec,st){rec.lodSt=st;const B=rec.body.children;const upper=rec.upper;
+  for(const c of B){if(c===rec.lod)c.visible=st===2;else if(c===rec.mid)c.visible=st===1;else if(upper.has(c))c.visible=st===0;else if(c===rec.legL||c===rec.legR)c.visible=st<2;else c.visible=st<2}}
+function optSettlerLOD(rec,s){const cp=camera.position,p=rec.g.position;const d2=cp.distanceToSquared(p);
+  const st=d2>OPT.lodD*OPT.lodD?2:d2>OPT.midD*OPT.midD?1:0;
+  if(st>0&&!rec.lod){const kids=rec.body.children.slice();rec.upper=new Set([kids[0],rec.armL,rec.armR,rec.head]);lodApply(rec,0);
+    rec.mid=mergeGroups(rec,[kids[0],rec.armL,rec.armR,rec.head]);rec.lod=mergeGroups(rec,kids.filter(c=>c!==rec.carrySlot&&c!==rec.toolSlot&&c!==rec.lampSlot));rec.lodSt=-1}
+  if(rec.lod&&rec.lodSt!==st)lodApply(rec,st)}
+function optLodCycle(){const i=LODPRESETS.findIndex(q=>q[1]===OPT.lodD&&q[0]===OPT.midD);const q=LODPRESETS[(i+1)%LODPRESETS.length];OPT.midD=q[0];OPT.lodD=q[1]}
+const TRI={};function optProfile(){for(const k in TRI)delete TRI[k];const top=new Map();for(const r of bRec.values())if(r.g)top.set(r.g,'budynki');for(const r of sRec.values())top.set(r.g,'osadnicy');for(const r of pierRec.values())if(r&&r.g)top.set(r.g,'pomosty');
+  const c={};const add=(k,n)=>{c[k]=(c[k]||0)+n};
+  for(const o of scene.children){if(!o.visible)continue;const lab=top.get(o)||(o.isInstancedMesh?'instancje':o.isMesh?'inne siatki':'inne grupy');let n=0,sh=0;
+    let tr=0;o.traverseVisible(m=>{if(m.isMesh||m.isLine||m.isPoints){n++;if(m.castShadow)sh++;if(m.isMesh&&m.geometry){const g=m.geometry,vc=g.index?g.index.count:(g.attributes.position?g.attributes.position.count:0);tr+=vc/3*(m.isInstancedMesh?m.count:1)}}});add(lab,n);add(lab+'#',sh);TRI[lab]=(TRI[lab]||0)+tr}
+  const im=ALLIM.filter(m=>m.visible&&m.count>0).map((m,i)=>{const g=m.geometry,vc=g.index?g.index.count:g.attributes.position.count;return {i:ALLIM.indexOf(m),n:m.count,t:vc/3,T:vc/3*m.count}}).sort((a,b)=>b.T-a.T).slice(0,6);window.__imTop=im.map(q=>`#${q.i}: ${q.n}x${q.t}=${(q.T/1e6).toFixed(2)}M`).join(' | ');
+  return Object.keys(c).filter(k=>!k.endsWith('#')).sort((a,b)=>c[b]-c[a]).map(k=>`${k} ${c[k]} (cień ${c[k+'#']}) tr ${(TRI[k]/1e6).toFixed(2)}M`).join('\n')}
+function optMoveT(base){return OPT.moveK>0?Math.max(base,viewRadius()*OPT.moveK):base}
+OPT.treeK=0.7;const TREEKS=[1e9,1.2,.7,.45];function optTreeCycle(){const i=TREEKS.indexOf(OPT.treeK);OPT.treeK=TREEKS[(i+1)%TREEKS.length];objDirty=true}
+OPT.bLodD=60;const BLODSTEPS=[40,60,100,1e9];
+function optBuildingLOD(){const D=OPT.bLodD,d2=D*D,cp=camera.position;
+  for(const rec of bRec.values()){if(!rec.g.visible)continue;const far=D<1e8&&cp.distanceToSquared(rec.g.position)>d2;if(!far)continue;
+    if(rec.wins)for(const m of rec.wins)m.visible=false;
+    for(const f of rec.flags)f.visible=false;
+    if(rec.jets)for(const q of rec.jets)q.m.visible=false;
+    if(rec.horses)for(const o of rec.horses)o.hr.g.visible=false;
+    if(rec.ws)for(const m of rec.ws)m.visible=false}}
+const optRF={n:0,t:performance.now(),fps:0};function optRFtick(){optRF.n++;const n=performance.now();if(n-optRF.t>=2000){optRF.fps=optRF.n*1000/(n-optRF.t);optRF.n=0;optRF.t=n}}
+function optBLodCycle(){const i=BLODSTEPS.indexOf(OPT.bLodD);OPT.bLodD=BLODSTEPS[(i+1)%BLODSTEPS.length]}
+
+OPT.on=true;function optToggle(){OPT.on=!OPT.on;if(OPT.on)Object.assign(OPT,{farIM:true,midD:22,lodD:45,bLodD:60,treeK:.7,moveK:.2,shadowMove:2,hideEmpty:true,settlerShadowR:28,shadowEvery:2,smallShadow:false});else Object.assign(OPT,{farIM:false,midD:1e9,lodD:1e9,bLodD:1e9,treeK:1e9,moveK:0,shadowMove:1,hideEmpty:false,settlerShadowR:1e9,shadowEvery:1,smallShadow:true});optSmall()}
+/* ---------- opcje graficzne (zapisywane w localStorage) ---------- */
+const GFX=(()=>{
+  const DETAIL=[['Wysoka',30,60,100],['Średnia',22,45,60],['Niska',15,30,40]],SHADOW=[['Wysokie',4096,1],['Średnie',2048,1],['Niskie',1024,1],['Wyłączone',1024,0]],
+    TREE=[['Wył.',1e9],['Zwykły',1.2],['Agresywny',.7]],RES=[['100%',1],['75%',.75],['50%',.5]],VIEW=[['Duży',150],['Średni',110],['Mały',80]];
+  const TAB={detail:DETAIL,shadow:SHADOW,tree:TREE,res:RES,view:VIEW};
+  const o={detail:1,shadow:0,tree:0,res:0,view:0};
+  try{const v=JSON.parse(localStorage.getItem('pintar-gfx')||'{}');for(const k in o)if(Number.isInteger(v[k])&&v[k]>=0&&v[k]<TAB[k].length)o[k]=v[k]}catch(e){}
+  function apply(){const d=DETAIL[o.detail];OPT.midD=d[1];OPT.lodD=d[2];OPT.bLodD=d[3];OPT.treeK=TREE[o.tree][1];OPT.viewMax=VIEW[o.view][1];
+    const sh=SHADOW[o.shadow];if(sun.shadow.mapSize.x!==sh[1]){sun.shadow.mapSize.set(sh[1],sh[1]);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}sun.castShadow=!!sh[2];
+    window.GFXRES=RES[o.res][1];try{resize()}catch(e){}objDirty=decorDirty=true}
+  function cycle(k){o[k]=(o[k]+1)%TAB[k].length;try{localStorage.setItem('pintar-gfx',JSON.stringify(o))}catch(e){}apply()}
+  function label(k){return TAB[k][o[k]][0]}
+  return {apply,cycle,label};
+})();
+GFX.apply();
 const STORE_SLOTS={magazyn:{x0:.3,z0:1.35,dx:.52,dz:.42,cols:5},spichlerz:{x0:.55,z0:.9,dx:.62,dz:.72,cols:5},spichlerz_m:{x0:.5,z0:.9,dx:.5,dz:.5,cols:4},spichlerz_d:{x0:.7,z0:1.2,dx:.7,dz:.7,cols:6}};
-function viewRadius(){return Math.min(150,camS.dist*2.1+42)}
+function viewRadius(){return Math.min(OPT.viewMax||150,camS.dist*2.1+42)}
 function inView(x,y,R){return Math.abs(x-camS.tx)<=R&&Math.abs(y-camS.tz)<=R}
 let lastObjCam={x:-999,z:-999,d:0},markList=[];
 const fellRec=new Map();
 function syncObjs(t){
-  const R=viewRadius(),RF=Math.min(520,camS.dist*3.8+90),moved=Math.abs(camS.tx-lastObjCam.x)>2||Math.abs(camS.tz-lastObjCam.z)>2||Math.abs(camS.dist-lastObjCam.d)>4;
+  const R=viewRadius(),RF=Math.min(520,camS.dist*3.8+90),mvT=optMoveT(2),moved=Math.abs(camS.tx-lastObjCam.x)>mvT||Math.abs(camS.tz-lastObjCam.z)>mvT||Math.abs(camS.dist-lastObjCam.d)>mvT*2;
   if(objDirty||moved){objDirty=false;lastObjCam={x:camS.tx,z:camS.tz,d:camS.dist};markList=[];
     const cnt={};for(const k in objIM){cnt[k]=0;objIds[k].length=0}
     for(const o of Object.values(S.objs)){
       const far=!inView(o.x,o.y,R);if(o.type==='felled'||!inView(o.x,o.y,RF)||(far&&!TREES[o.type]))continue;
-      const k=o.type==='bush'?(o.berries?'bushB':'bush'):(far?o.type+'_l':o.type);const i=cnt[k];if(i>=OBJCAP)continue;cnt[k]++;
+      const far2=far||(TREES[o.type]&&OBJGEO[o.type+'_l']&&!inView(o.x,o.y,Math.max(24,camS.dist*OPT.treeK)));
+      const k=o.type==='bush'?(o.berries?'bushB':'bush'):(far2?o.type+'_l':o.type);const i=cnt[k];if(i>=OBJCAP)continue;cnt[k]++;
       const r=hash(o.x,o.y,7);let sc=1;if(o.type==='sapling')sc=.5+o.growth*.9;else if(TREES[o.type])sc=.85+r*.4;
       dummy.position.set(o.x+.5,hg(o.x,o.y),o.y+.5);dummy.rotation.set(0,Math.floor((TREES[o.type]||o.type==='bush'?hash(o.x,o.y,11):r)*4)*Math.PI/2,0);dummy.scale.set(sc,sc,sc);dummy.updateMatrix();objIM[k].setMatrixAt(i,dummy.matrix);objIds[k][i]=o.id;
       if(o.mark)markList.push([o,sc]);
@@ -5297,13 +5392,13 @@ let decoCam={x:-999,z:-999,d:0,t:0};const flowerSpots=[];
 const vn=(x,y,sd)=>{const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);return (hash(ix,iy,sd)*(1-u)+hash(ix+1,iy,sd)*u)*(1-v)+(hash(ix,iy+1,sd)*(1-u)+hash(ix+1,iy+1,sd)*u)*v};
 /* sitowie tylko w niektórych partiach brzegu (ok. połowa, nigdy >66%), w większych kępach */
 const reedZ=(x,y)=>vn(x/7+3.1,y/7+1.7,41)>.46;
-function syncDecor(now){
-  const R=viewRadius();if(!decorDirty&&Math.abs(camS.tx-decoCam.x)<3&&Math.abs(camS.tz-decoCam.z)<3&&Math.abs(camS.dist-decoCam.d)<5)return;
-  decorDirty=false;decoCam={x:camS.tx,z:camS.tz,d:camS.dist};flowerSpots.length=0;
-  const cnt={};for(const k in decoIM)cnt[k]=0;
-  const add=(k,x,y,h,s,r)=>{if(cnt[k]>=9000)return;dummy.position.set(x,h,y);dummy.rotation.set(0,r,0);dummy.scale.set(s,s,s);dummy.updateMatrix();decoIM[k].setMatrixAt(cnt[k]++,dummy.matrix)};
-  const x0=Math.max(0,Math.floor(camS.tx-R)),x1=Math.min(MW-1,Math.ceil(camS.tx+R)),y0=Math.max(0,Math.floor(camS.tz-R)),y1=Math.min(MH-1,Math.ceil(camS.tz+R));
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+const decStg={};let decJob=null,decDL=0;
+function* decorGen(R,cx,cz){
+  const fs=[];const cnt={};for(const k in decoIM){cnt[k]=0;if(!decStg[k])decStg[k]=new Float32Array(9000*16)}
+  const add=(k,x,y,h,s,r)=>{if(cnt[k]>=9000)return;dummy.position.set(x,h,y);dummy.rotation.set(0,r,0);dummy.scale.set(s,s,s);dummy.updateMatrix();dummy.matrix.toArray(decStg[k],cnt[k]++*16)};
+  const x0=Math.max(0,Math.floor(cx-R)),x1=Math.min(MW-1,Math.ceil(cx+R)),y0=Math.max(0,Math.floor(cz-R)),y1=Math.min(MH-1,Math.ceil(cz+R));
+  for(let y=y0;y<=y1;y++){if(performance.now()>decDL)yield 0;
+  for(let x=x0;x<=x1;x++){
     const i=idx(x,y),g=S.ground[i];if(isRoadG(g)||bGrid[i]||S.plant[x+','+y])continue;
     const r=hash(x,y,77),wE=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inb(x+a,y+b)&&S.ground[idx(x+a,y+b)]===WA);if(r>.2&&!wE)continue;const r2=hash(x,y,91);const h=S.hgt[i],ox=x+.2+hash(x,y,5)*.6,oy=y+.2+hash(x,y,6)*.6,rot=hash(x,y,8)*6.28,sc=.8+hash(x,y,9)*.5;
     if(g===WA){const land=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>inb(x+a,y+b)&&S.ground[idx(x+a,y+b)]!==WA);if(land){if(reedZ(x,y)){add('reeds',ox,oy,-.1,sc*1.15,rot);add('reeds',ox+.35,oy-.25,-.1,sc*1.05,rot+1);if(r2<.7)add('reeds',ox-.3,oy+.3,-.1,sc,rot+2);if(r2<.35)add('reeds',ox+.1,oy+.45,-.1,sc*.9,rot+3)}else if(r<.12)add('lily',ox,oy,-.12,sc,rot)}else if(!reedZ(x,y)&&r<.05)add('lily',ox,oy,-.12,sc,rot);continue}
@@ -5316,16 +5411,24 @@ function syncDecor(now){
     if(r>.2)continue;
     if(nearTree){if(r<.05)add('fern',ox,oy,h,sc,rot);else if(r<.065)add(hash(x,y,3)<.5?'mushR':'mushB',ox,oy,h,sc,rot);else if(r<.07)add('log',ox,oy,h,sc*.9,rot);else if(r<.1)add('grass',ox,oy,h,sc,rot);continue}
     if(r<.07)add('grass',ox,oy,h,sc,rot);else if(r<.09)add('tall',ox,oy,h,sc,rot);
-    else if(r<.115){const f=hash(x,y,4);add(f<.33?'flowerA':f<.66?'flowerB':'flowerC',ox,oy,h,sc,rot);if(flowerSpots.length<400)flowerSpots.push([ox,oy,h])}
+    else if(r<.115){const f=hash(x,y,4);add(f<.33?'flowerA':f<.66?'flowerB':'flowerC',ox,oy,h,sc,rot);if(fs.length<400)fs.push([ox,oy,h])}
     else if(r<.122)add('pebble',ox,oy,h,sc,rot);
   }
-  for(const k in decoIM){decoIM[k].count=cnt[k];decoIM[k].instanceMatrix.needsUpdate=true}
+  }
+  for(const k in decoIM){decoIM[k].instanceMatrix.array.set(decStg[k].subarray(0,cnt[k]*16));decoIM[k].count=cnt[k];decoIM[k].instanceMatrix.needsUpdate=true}
+  flowerSpots.length=0;for(const f of fs)flowerSpots.push(f);
+}
+function syncDecor(now){
+  if(!decJob){const R=viewRadius();if(!decorDirty&&Math.abs(camS.tx-decoCam.x)<optMoveT(3)&&Math.abs(camS.tz-decoCam.z)<optMoveT(3)&&Math.abs(camS.dist-decoCam.d)<optMoveT(3)*1.7)return;
+    decorDirty=false;const first=decoCam.x<-900;decoCam={x:camS.tx,z:camS.tz,d:camS.dist};decJob=decorGen(R,camS.tx,camS.tz);decJob.sync=first}
+  decDL=(!OPT.on||decJob.sync)?1e12:performance.now()+(OPT.decorMs||2.5);
+  if(decJob.next().done)decJob=null;
 }
 
 /* ---------- crops ---------- */
 let cropCam={x:-999,z:-999};
 function syncCrops(){
-  const R=viewRadius();if(!fieldDirty&&Math.abs(camS.tx-cropCam.x)<3&&Math.abs(camS.tz-cropCam.z)<3)return;fieldDirty=false;cropCam={x:camS.tx,z:camS.tz};
+  const R=viewRadius();if(!fieldDirty&&Math.abs(camS.tx-cropCam.x)<optMoveT(3)&&Math.abs(camS.tz-cropCam.z)<optMoveT(3))return;fieldDirty=false;cropCam={x:camS.tx,z:camS.tz};
   const cnt={};for(const c in cropIM)cnt[c]=[0,0];
   for(const b of Object.values(S.buildings)){if(!b.built||!b.ts||!inView(b.x,b.y,R+8))continue;const h=hg(b.x,b.y)+.14,spots=CROP_SPOTS[b.crop],M=cropIM[b.crop],w=b.zw;
     for(let i=0;i<b.ts.length;i++){const st=b.ts[i];if(!st)continue;const tx=b.x+i%w,ty=b.y+((i/w)|0);const ripe=st===2?1:0;const g=ripe?1:b.tg[i];
@@ -5492,6 +5595,7 @@ function syncBuildings(t,dt){
     for(const f of rec.flags){f.rotation.y=Math.sin(t*2.2+b.id)*.35;f.scale.x=.85+Math.sin(t*3.1+b.id)*.15}
     if(rec.boat){const sp=b.type==='rybacka'&&!b.pier&&shoreBoat(b);rec.boat.visible=!!sp;if(sp){rec.boat.position.set(sp[0],sp[1],sp[2]);rec.boat.rotation.y=sp[3]+Math.sin(t*.8)*.05}}
   }
+  try{optBuildingLOD()}catch(e){if(!window._bl){window._bl=1;const d=document.createElement('pre');d.style.cssText='position:fixed;left:0;top:0;z-index:2147483647;background:#a00;color:#fff;font:12px monospace;margin:0;padding:4px';d.textContent='LOD budynkow: '+e.message+' | '+(e.stack||'').split('\n').slice(0,3).join(' / ');document.documentElement.appendChild(d)}}
 }
 const boatCache=new Map();
 function shoreBoat(b){const k=b.id;if(boatCache.has(k))return boatCache.get(k);const M=getModel(b);let r=null;const [fw,fh]=dims(b);
@@ -5632,11 +5736,11 @@ const ringMesh=new THREE.Mesh(new THREE.RingGeometry(.26,.36,24),new THREE.MeshB
 function taskTarget(s){const t=s.task;if(!t)return null;if(s.faceTo)return s.faceTo;if(t.wx!==undefined)return[t.wx,t.wy];if(t.oid){const o=S.objs[t.oid];if(o)return[o.x,o.y]}if(t.bid){const b=S.buildings[t.bid];if(b){const [w,h]=dims(b);return[b.x+w/2-.5,b.y+h/2-.5]}}if(t.pkey)return[t.px,t.py];return null}
 const torchList=[];
 function syncSettlers(dt,t){
-  for(const [id,rec] of sRec)if(!S.settlers.find(s=>s.id===id)){scene.remove(rec.g);sRec.delete(id)}
-  ringMesh.visible=false;torchList.length=0;const dark=darkness()>.22,R=viewRadius()+4;
+  for(const [id,rec] of sRec)if(!S.settlers.find(s=>s.id===id)){scene.remove(rec.g);optDisposeRec(rec);sRec.delete(id)}
+  ringMesh.visible=false;torchList.length=0;const dark=darkness()>.22,R=viewRadius()+4;FARN=0;FARDIRTY=true;
   for(const s of S.settlers){
     let rec=sRec.get(s.id);
-    if(rec&&(rec.job!==s.job||rec.child!==s.child)){scene.remove(rec.g);rec=null;sRec.delete(s.id)}
+    if(rec&&(rec.job!==s.job||rec.child!==s.child)){scene.remove(rec.g);optDisposeRec(rec);rec=null;sRec.delete(s.id)}
     if(!rec){rec=makeSettler3D(s);sRec.set(s.id,rec);scene.add(rec.g)}
     rec.g.visible=!s.hidden&&inView(s.x,s.y,R);if(!rec.g.visible){rec.px=s.x;rec.py=s.y;continue}
     const sc=s.child?.42+s.grow*.3:.84;rec.g.scale.setScalar(sc);
@@ -5647,11 +5751,11 @@ function syncSettlers(dt,t){
     else if(s.faceAng!=null&&s.inside)turn(s.faceAng,8);
     else if((s.working||s.talk)&&s.task){const tg=taskTarget(s);if(tg)turn(Math.atan2(tg[0]-s.x,tg[1]-s.y),8)}
     rec.px=s.x;rec.py=s.y;
-    rec.g.position.set(s.x+.5,rec.y,s.y+.5);rec.g.rotation.y=rec.heading;
+    rec.g.position.set(s.x+.5,rec.y,s.y+.5);rec.g.rotation.y=rec.heading;optSettlerShadow(rec,s);
     rec.fish=null;if(s.task&&s.task.type==='craft'&&s.working==='rod'){const fb0=S.buildings[s.task.bid],fb=fb0&&berthView(fb0,s.task.bi);if(fb&&fb.pier){rec.fish=fishPose(s,fb,t);const F=rec.fish;rec.g.position.set(F.x,F.y,F.z);rec.g.rotation.y=F.h}}
     fishBoatSync(rec,s,t);
     const a=s.anim;rec.wa=(rec.wa||0)+((s.walking?1:0)-(rec.wa||0))*Math.min(1,dt*7);const wa=rec.wa;const ph=(s.stride||0)*(s.child?9.5:7.2);
-    rec.body.rotation.set(0,0,0);rec.body.position.set(0,0,0);rec.legL.rotation.x=rec.legR.rotation.x=0;rec.armL.rotation.set(0,0,0);rec.armR.rotation.set(0,0,0);rec.head.rotation.set(0,0,0);rec.toolSlot.rotation.x=.45;rec.mouth.scale.y=1;
+    rec.body.rotation.set(0,0,0);rec.body.position.set(0,0,0);rec.legL.rotation.x=rec.legR.rotation.x=0;rec.armL.rotation.set(0,0,0);rec.armR.rotation.set(0,0,0);rec.head.rotation.set(0,0,0);rec.toolSlot.rotation.x=.45;rec.mouth.scale.y=1;optSettlerLOD(rec,s);if(OPT.farIM&&rec.lodSt===2&&!rec.fish&&!s.sleeping&&!s.carry){rec.g.visible=false;farPut(rec,s,sc);continue}
     if(s.sleeping){rec.body.rotation.x=-Math.PI/2;rec.body.position.set(0,.1+Math.sin(a*1.2)*.006,.42);rec.head.rotation.x=.2}
     else{
       const sw=Math.sin(ph)*.72*wa;rec.legL.rotation.x=sw;rec.legR.rotation.x=-sw;rec.armL.rotation.x=-sw*.7;rec.armR.rotation.x=sw*.7;rec.armL.rotation.z=-.06*wa;rec.armR.rotation.z=.06*wa;
@@ -6148,19 +6252,20 @@ function fishAnim(rec,s,a){const F=rec.fish;
 /* ============================== audio (procedural) ============================== */
 const AUDIO=(()=>{
   let ac=null,master,musicG,sfxG,dry,wet,noiseBuf,windG,windF,cricG,started=false;
-  const on={music:true,sfx:true};
-  try{const v=JSON.parse(localStorage.getItem('pintar-audio')||'{}');if(v.music===false)on.music=false;if(v.sfx===false)on.sfx=false}catch(e){}
+  const on={music:true,sfx:true},vol={master:1,music:1,sfx:1};
+  try{const v=JSON.parse(localStorage.getItem('pintar-audio')||'{}');if(v.music===false)on.music=false;if(v.sfx===false)on.sfx=false;if(v.vol)for(const k in vol)if(typeof v.vol[k]==='number')vol[k]=Math.max(0,Math.min(1,v.vol[k]))}catch(e){}
   let nextNote=0,beat=0,chordI=0,nextBird=2,nextOwl=20,nextCrack=0,nextHam=0,nextBell=0,nextClop=0,nextFlute=24,lastIdx=7,padUntil=0;
   const SC=[0,2,3,5,7,9,10],ROOT=50;
   const CH=[[0,[0,3,7]],[-2,[0,4,7]],[-7,[0,4,7]],[0,[0,3,7]],[-5,[0,3,7]],[-2,[0,4,7]],[-7,[0,4,7]],[-5,[0,3,7]]];
   const mf=m=>440*Math.pow(2,(m-69)/12);
-  function save(){try{localStorage.setItem('pintar-audio',JSON.stringify(on))}catch(e){}}
+  function save(){const _t=performance.now();try{return save0()}finally{const d=performance.now()-_t;if(d>(OTM.SAVE||0))OTM.SAVE=d}}
+function save0(){try{localStorage.setItem('pintar-audio',JSON.stringify({music:on.music,sfx:on.sfx,vol}))}catch(e){}}
   function impulse(sec){const n=ac.sampleRate*sec,b=ac.createBuffer(2,n,ac.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6)}return b}
   function start(){
     if(started){if(ac&&ac.state==='suspended')ac.resume();return}
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ac=new AC();started=true;
-    master=ac.createGain();master.gain.value=.9;master.connect(ac.destination);
-    musicG=ac.createGain();musicG.gain.value=on.music?1:0;sfxG=ac.createGain();sfxG.gain.value=on.sfx?1:0;
+    master=ac.createGain();master.gain.value=.9*vol.master;master.connect(ac.destination);
+    musicG=ac.createGain();musicG.gain.value=on.music?vol.music:0;sfxG=ac.createGain();sfxG.gain.value=on.sfx?vol.sfx:0;
     dry=ac.createGain();dry.gain.value=.6;wet=ac.createConvolver();wet.buffer=impulse(2.6);const wg=ac.createGain();wg.gain.value=.55;
     musicG.connect(dry);dry.connect(master);musicG.connect(wet);wet.connect(wg);wg.connect(master);sfxG.connect(master);
     const nb=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;noiseBuf=nb;
@@ -6225,7 +6330,7 @@ const AUDIO=(()=>{
   function tick(dt){
     if(!ac||!started||typeof S==='undefined'||!S.buildings)return;if(ac.state!=='running')return;
     const now=ac.currentTime,h=hour(),dark=darkness()/.66,day=1-dark;
-    musicG.gain.setTargetAtTime(on.music?1:0,now,.4);sfxG.gain.setTargetAtTime(on.sfx?1:0,now,.3);
+    musicG.gain.setTargetAtTime(on.music?vol.music:0,now,.4);sfxG.gain.setTargetAtTime(on.sfx?vol.sfx:0,now,.3);master.gain.setTargetAtTime(.9*vol.master,now,.1);
     if(on.music)music(now,dark,speed);else nextNote=Math.max(nextNote,now+.5);
     if(!on.sfx)return;
     windG.gain.setTargetAtTime(0,now,.5);
@@ -6243,7 +6348,8 @@ const AUDIO=(()=>{
   }
   function setMusic(v){on.music=v;save();if(v)start()}
   function setSfx(v){on.sfx=v;save();if(v)start()}
-  return {start,tick,on,setMusic,setSfx};
+  function setVol(k,x){vol[k]=Math.max(0,Math.min(1,x));save();if(ac&&master){const n=ac.currentTime;master.gain.setTargetAtTime(.9*vol.master,n,.05);musicG.gain.setTargetAtTime(on.music?vol.music:0,n,.05);sfxG.gain.setTargetAtTime(on.sfx?vol.sfx:0,n,.05)}}
+  return {start,tick,on,vol,setMusic,setSfx,setVol};
 })();
 
 /* ============================== input ============================== */
@@ -6826,7 +6932,7 @@ function perfGpu(){try{const gl=renderer.getContext(),x=gl.getExtension('WEBGL_d
 function perfShow(on){PERF.on=on;if(on&&!PERF.el){const d=document.createElement('pre');d.id='perf';d.style.cssText='position:fixed;left:8px;top:96px;z-index:60;margin:0;padding:6px 9px;background:rgba(14,10,6,.78);color:#f0e2b4;font:12px/1.35 "Courier New",monospace;border:1px solid #6a4a28;pointer-events:none;white-space:pre';document.body.appendChild(d);PERF.el=d;PERF.gpu=perfGpu()}if(PERF.el)PERF.el.hidden=!on}
 function perfTick(ms,sim,sync,rend){const P=PERF;P.acc+=ms;P.n++;P.sim=P.sim*.9+sim*.1;P.sync=P.sync*.9+sync*.1;P.rend=P.rend*.9+rend*.1;P.ms=P.ms*.9+ms*.1;
   if(P.acc>=500){P.fps=P.n*1000/P.acc;P.acc=0;P.n=0;if(P.on&&P.el){const I=renderer.info,k=S.buildings?Object.keys(S.buildings).length:0;
-    P.el.textContent=`FPS ${P.fps.toFixed(0)}  (${P.ms.toFixed(1)} ms)\nSymulacja ${P.sim.toFixed(1)} ms\nAktualiz. obiektów ${P.sync.toFixed(1)} ms\nRysowanie (CPU) ${P.rend.toFixed(1)} ms\nDraw calls ${I.render.calls}  Trójkąty ${(I.render.triangles/1000).toFixed(0)}k\nGeometrie ${I.memory.geometries}  Tekstury ${I.memory.textures}\nOsadnicy ${S.settlers.length}  Budynki ${k}\nGPU: ${P.gpu}`}}}
+    P.el.textContent=`Ukryte ściany: usunięto ${HFC.removed}/${HFC.total}  najgorsza klatka(2s): ${optMaxShow.toFixed(0)} ms\nRZECZYWISTE FPS ${optRF.fps.toFixed(1)}   |   FPS(czas pracy) ${P.fps.toFixed(0)}  (${P.ms.toFixed(1)} ms)\nSymulacja ${P.sim.toFixed(1)} ms\nAktualiz. obiektów ${P.sync.toFixed(1)} ms\nRysowanie (CPU) ${P.rend.toFixed(1)} ms\nDraw calls ${I.render.calls}  Trójkąty ${(I.render.triangles/1000).toFixed(0)}k\nGeometrie ${I.memory.geometries}  Tekstury ${I.memory.textures}\nOsadnicy ${S.settlers.length}  Budynki ${k}\nteraz ${(performance.now()/1000).toFixed(1)}s  skoki>200ms: ${(OPT.slow||[]).join(' ')}\n--- szczyty (ms/2s): ${optTShow()}\nsumy(2s): ${optAcc}\n--- widoczne bryły ---\n${optProfile()}\nTOP instancje: ${window.__imTop}\nGPU: ${P.gpu}`}}}
 let lastT=0,acc=0,uiT=0,wT=0;
 function frame(now){
   const pf0=performance.now();
@@ -6835,11 +6941,11 @@ function frame(now){
     if(keys.has('w')||keys.has('arrowup')){camS.tx+=fx*ps;camS.tz+=fz*ps}if(keys.has('s')||keys.has('arrowdown')){camS.tx-=fx*ps;camS.tz-=fz*ps}
     if(keys.has('d')||keys.has('arrowright')){camS.tx+=rx*ps;camS.tz+=rz*ps}if(keys.has('a')||keys.has('arrowleft')){camS.tx-=rx*ps;camS.tz-=rz*ps}
     if(keys.has('q'))camS.yaw+=dt*1.8;if(keys.has('e'))camS.yaw-=dt*1.8;clampCam()}
-  if(!EVT.open)eventTick();acc+=dt*speed;let n=0;const STEP=1/30;while(acc>=STEP&&n<12){update(STEP);acc-=STEP;n++}if(n>=12)acc=0;const pf1=performance.now();
+  if(!EVT.open)eventTick();acc+=dt*speed;let n=0;const STEP=1/30;while(acc>=STEP&&n<12){optT('SIM',()=>update(STEP));acc-=STEP;n++}if(n>=12)acc=0;const pf1=performance.now();
   if(terrDirty){terrDirty=false;buildTerrain3D()}
-  updateSky();syncDecor();syncObjs(t);syncCrops();syncBuildings(t,dt);syncPiers();if(!window.DEMO_ON){syncSettlers(dt,t);syncMerchant(dt);syncWild(dt*Math.min(speed,2));syncAnimals(t,dt);syncFish(t,dt)}syncShips(t);syncFx(t);syncOverlay();placeCamera();
+  optT('sky',()=>updateSky());optT('decor',()=>syncDecor());optT('obj',()=>syncObjs(t));optT('crops',()=>syncCrops());optT('bud',()=>syncBuildings(t,dt));syncPiers();if(!window.DEMO_ON){optT('osadn',()=>syncSettlers(dt,t));syncMerchant(dt);optT('dzik',()=>syncWild(dt*Math.min(speed,2)));optT('zwierz',()=>syncAnimals(t,dt));syncFish(t,dt)}syncShips(t);optT('fx',()=>syncFx(t));syncOverlay();placeCamera();
   try{AUDIO.tick(dt)}catch(e){}
-  const pf2=performance.now();renderer.render(scene,camera);syncLabels();const pf3=performance.now();perfTick(pf3-pf0,pf1-pf0,pf2-pf1,pf3-pf2);
+  const pf2=performance.now();optPre();renderer.render(scene,camera);syncLabels();const pf3=performance.now();perfTick(pf3-pf0,pf1-pf0,pf2-pf1,pf3-pf2);
   uiT+=dt;if(uiT>.3){uiT=0;updateHUD();refreshPanel(false)}
   wT+=dt;if(wT>2){wT=0;if(!workersEl.hidden&&!workersEl.contains(document.activeElement))renderWorkers()}
   requestAnimationFrame(frame);
@@ -7020,7 +7126,9 @@ function render(){box._pend=1;setTimeout(decorate,0);
   else if(page==='new'){box.innerHTML=`<h1>Nowa gra</h1><label>Nazwa osady<input type="text" id="smTown" maxlength="28" value="${esc(S.town||'')}"></label><label>Ziarno mapy (puste = losowa)<input type="number" id="smSeed" placeholder="np. 12345"></label>
     <label>Rodzaj gry<select id="smKind" style="font:inherit;padding:3px;background:#f6ecd0;color:#2a1f16;border:2px solid #8a6a44"><option value="">Zwykła osada</option><option value="big">Duże miasto (test wydajności: 400 budynków, 306 osadników)</option></select></label>
     <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="smFree"> Swobodna budowa (bez kosztów)</label><button class="smb" data-a="go">Zaczynamy</button><button class="smb" data-a="back">Wróć</button>`}
-  else if(page==='set'){box.innerHTML=`<h1>Ustawienia</h1><button class="smb" data-a="mus">Muzyka: ${AUDIO.on.music?'wł.':'wył.'}</button><button class="smb" data-a="sfx">Odgłosy: ${AUDIO.on.sfx?'wł.':'wył.'}</button><p class="t">Obracanie kamery: środkowy przycisk myszy lub Q i E. Przesuwanie: prawy przycisk lub WASD. Kółko przybliża; z bliska słychać osadników.</p><button class="smb" data-a="back">Wróć</button>`}
+  else if(page==='set'){box.innerHTML=`<h1>Ustawienia</h1><button class="smb" data-a="pgfx">Grafika</button><button class="smb" data-a="psnd">Dźwięk</button><p class="t">Obracanie kamery: środkowy przycisk myszy lub Q i E. Przesuwanie: prawy przycisk lub WASD. Kółko przybliża; z bliska słychać osadników.</p><button class="smb" data-a="back">Wróć</button>`}
+  else if(page==='gfx'){box.innerHTML=`<h1>Grafika</h1><button class="smb" data-a="g:detail">Szczegółowość modeli: ${GFX.label('detail')}</button><button class="smb" data-a="g:shadow">Cienie: ${GFX.label('shadow')}</button><button class="smb" data-a="g:view">Zasięg rysowania: ${GFX.label('view')}</button><button class="smb" data-a="g:tree">Drzewa w oddali (LOD): ${GFX.label('tree')}</button><button class="smb" data-a="g:res">Rozdzielczość: ${GFX.label('res')}</button><p class="t">Niższe ustawienia dają więcej klatek na sekundę w dużych osadach. Szczegółowość modeli ustala, od jakiej odległości osadnicy i budynki tracą detale.</p><button class="smb" data-a="pset">Wróć</button>`}
+  else if(page==='snd'){const pc=v=>Math.round(v*100)+'%';box.innerHTML=`<h1>Dźwięk</h1><button class="smb" data-a="mus">Muzyka: ${AUDIO.on.music?'wł.':'wył.'}</button><button class="smb" data-a="sfx">Odgłosy: ${AUDIO.on.sfx?'wł.':'wył.'}</button><button class="smb" data-a="v:master">Głośność ogólna: ${pc(AUDIO.vol.master)}</button><button class="smb" data-a="v:music">Głośność muzyki: ${pc(AUDIO.vol.music)}</button><button class="smb" data-a="v:sfx">Głośność odgłosów: ${pc(AUDIO.vol.sfx)}</button><button class="smb" data-a="pset">Wróć</button>`}
   else if(page==='cred'){box.innerHTML=`<span data-px="head"></span><h1>Twórcy</h1><span data-px="div"></span><p class="t cr"><span>Pomysł, projekt i kierunek artystyczny</span><b>twórca gry Pintar</b></p><p class="t cr"><span>Kod, modele voxelowe, animacje i dźwięk</span><b>Claude (Anthropic)</b></p><p class="t cr"><span>Silnik grafiki</span><b>Three.js</b></p><button class="smb" data-a="back">Wróć</button>`}
   else if(page==='bye'){box.innerHTML=`<span data-px="head"></span><h1>Do zobaczenia</h1><span data-px="div"></span><p class="t" style="text-align:center">Dziękujemy za grę w Pintar. Możesz teraz zamknąć tę kartę przeglądarki.</p><button class="smb" data-a="back">Wróć do menu</button>`}
   else{box.innerHTML=`<h1>Jak grać</h1><p class="t"><b>Wytnij</b> i <b>Kop</b>: oznacz drzewa i skały. <b>Mieszkania</b> dają łóżka, <b>Rolnictwo</b> – pola, sady i zagrody. <b>Pracownicy</b> to przydziały do warsztatów, <b>Handel</b> ustawia automatyczny zakup i sprzedaż kupcom na targu i w porcie. Co jakiś czas zdarzenia losowe zapytają Cię o decyzję.</p><button class="smb" data-a="back">Wróć</button>`}
@@ -7029,8 +7137,11 @@ function open(p){page=p||'main';render();try{decorate()}catch(e){}ov.classList.a
 box.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
   if(k==='cont'||k==='load'){try{const d=localStorage.getItem(SAVE_KEY);loadState(JSON.parse(d));sel=null;close();msg('Wczytano grę','good')}catch(er){msg('Nie udało się wczytać zapisu','bad')}}
   else if(k==='new'){page='new';render()}else if(k==='back'){page='main';render()}else if(k==='set'){page='set';render()}else if(k==='cred'){page='cred';render()}else if(k==='quit'){page='bye';render();try{window.close()}catch(er){}}
+  else if(k==='pgfx'){page='gfx';render()}else if(k==='psnd'){page='snd';render()}else if(k==='pset'){page='set';render()}
+  else if(k.startsWith('g:')){GFX.cycle(k.slice(2));render()}
+  else if(k.startsWith('v:')){const n=k.slice(2),cur=AUDIO.vol[n],st=[1,.75,.5,.25,0],i=st.findIndex(x=>Math.abs(x-cur)<.13);AUDIO.setVol(n,st[(i<0?0:i+1)%st.length]);try{AUDIO.start()}catch(er){}render()}
   else if(k==='mus'){AUDIO.setMusic(!AUDIO.on.music);render()}else if(k==='sfx'){AUDIO.setSfx(!AUDIO.on.sfx);render()}
-  else if(k==='go'){const town=document.getElementById('smTown').value.trim(),sd=+document.getElementById('smSeed').value||0,fr=document.getElementById('smFree').checked,big=document.getElementById('smKind').value==='big';newGame(sd||undefined,town||undefined);afterWorldReset();if(big)bigCity();setFree(fr);resetUi();if(big){perfShow(true);centerOn(MW*TILE/2,MH*TILE/2)}{const ti=document.getElementById('townInput');if(ti)ti.value=S.town}close();msg(`Założono nową osadę: ${S.town}`,'good');
+  else if(k==='go'){const town=document.getElementById('smTown').value.trim(),sd=+document.getElementById('smSeed').value||0,fr=document.getElementById('smFree').checked,kind=document.getElementById('smKind').value,big=kind==='big'||kind==='huge';newGame(sd||undefined,town||undefined);afterWorldReset();if(big)bigCity(kind==='huge'?800:400,kind==='huge'?600:300);setFree(fr);resetUi();if(big){perfShow(true);centerOn(MW*TILE/2,MH*TILE/2)}{const ti=document.getElementById('townInput');if(ti)ti.value=S.town}close();msg(`Założono nową osadę: ${S.town}`,'good');
     let seen=false;try{seen=!!localStorage.getItem('pintar-intro')}catch(er){}if(!seen){intro.hidden=false;setSpeed(0)}}});
 document.getElementById('bMain').onclick=()=>{document.getElementById('menuPanel').hidden=true;open('main')};
 /* przeloty kamery nad przykładową osadą w tle menu */
