@@ -460,7 +460,7 @@ const JOBS={
   tragarz:{n:'Tragarz',gen:1,d:'Nosi surowce do magazynu, materiały na budowy i opał do domów.',pri:{haul:7,supply:6,fuel:6,build:1}},
   budowniczy:{n:'Budowniczy',gen:0,d:'Zawód z chaty budowniczego: dostarcza materiały i wznosi budynki w pełnym tempie. Robotnicy bez zawodu budują o połowę wolniej.',pri:{build:8,supply:6,haul:2}},
   lesnik:{n:'Leśnik',gen:0,d:'Dba o las wokół chaty: sadzi młode drzewka i ścina dorosłe drzewa.',pri:{chop:8,plant:8,haul:2,supply:1}},
-  drwal:{n:'Drwal',gen:1,d:'Ścina oznaczone drzewa i sadzi nowe. W chacie drwala rąbie opał.',pri:{craft:8,chop:7,plant:6,haul:2,supply:1}},
+  drwal:{n:'Drwal',gen:1,d:'Ścina oznaczone drzewa. Nie sadzi nowych samoczynnie (sadzi leśnik). W chacie drwala rąbie opał.',pri:{craft:8,chop:7,plant:6,haul:2,supply:1}},
   gornik:{n:'Górnik',gen:1,d:'Wydobywa głazy i rudę, a w kamieniołomie łupie kamień.',pri:{craft:8,mine:7,haul:2,supply:1}},
   rolnik:{n:'Rolnik',gen:1,d:'Sieje i zbiera plony na polach, a gdy brakuje jedzenia, zbiera jagody.',pri:{farm:7,forage:5,haul:2,supply:1}},
   ciesla:{n:'Cieśla',d:'Tnie deski w tartaku.',pri:{craft:8,supply:3,build:2,haul:2}},
@@ -667,6 +667,15 @@ function newGame(seed,town){
   for(let i=0;i<S.settlers.length;i++)for(let j=i+1;j<S.settlers.length;j++)relAdd(S.settlers[i],S.settlers[j],5+Math.round(R()*22));
   paintTerrain();objDirty=fieldDirty=decorDirty=true;
 }
+/* tryb testowy „Duże miasto”: 400 budynków i 306 osadników rozsianych wokół środka mapy (do pomiaru wydajności, F3) */
+function bigCity(){
+  const types=['dom','chalupa','kamienica','blizniak','dom_kupca','chata','magazyn','piekarnia','kuznia','karczma','kaplica','stajnia','mlyn','studnia','latarnia'].filter(t=>BDEF[t]);
+  const cx=MW>>1,cy=MH>>1;let placed=0;
+  for(let i=0;i<20000&&placed<400;i++){const t=types[i%types.length],x=cx-130+Math.floor(rnd()*260),y=cy-100+Math.floor(rnd()*200);
+    try{if(canPlace(t,x,y,0)){placeBlueprint(t,x,y,true,Math.floor(rnd()*NVAR(t)),0);placed++}}catch(e){}}
+  const jobs=['robotnik','drwal','rolnik','gornik','budowniczy'];let n=0;
+  for(let i=0;i<8000&&n<300;i++){const x=cx-130+Math.floor(rnd()*260),y=cy-100+Math.floor(rnd()*200);if(passLand(x,y)){addSettler(x,y,jobs[n%5]);n++}}
+  assignHomes();return [placed,S.settlers.length]}
 function addSettler(x,y,job,sex){
   sex=sex||(rnd()<.5?'m':'f');const L=sex==='m'?NM:NF;const sn=SURN[(rnd()*SURN.length)|0],name=L[S.nameIdx[sex]++%L.length]+' '+sn[sex==='m'?0:1];
   const s={id:nid(),name,sex,job,work:0,x,y,path:[],task:null,carry:null,hunger:70+rnd()*30,energy:70+rnd()*30,mood:60,thoughts:[],tool:false,home:0,partner:0,preg:0,
@@ -704,24 +713,30 @@ function magUsed(m){let u=0;for(const r of RES)if(r!=='coins')u+=m.store[r]||0;r
 
 /* ============================== pathfinding ============================== */
 const N=MW*MH, gA=new Float32Array(N), came=new Int32Array(N), stamp=new Uint32Array(N), closed=new Uint32Array(N);let gen=1;
-class Heap{constructor(){this.a=[];this.f=[]}push(n,f){const a=this.a,F=this.f;a.push(n);F.push(f);let i=a.length-1;while(i>0){const p=(i-1)>>1;if(F[p]<=F[i])break;[a[p],a[i]]=[a[i],a[p]];[F[p],F[i]]=[F[i],F[p]];i=p}}
-  pop(){const a=this.a,F=this.f;const top=a[0],ln=a.pop(),lf=F.pop();if(a.length){a[0]=ln;F[0]=lf;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<a.length&&F[l]<F[m])m=l;if(r<a.length&&F[r]<F[m])m=r;if(m===i)break;[a[m],a[i]]=[a[i],a[m]];[F[m],F[i]]=[F[i],F[m]];i=m}}return top}}
-const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+/* kopiec binarny na tablicach typowanych (bez alokacji i bez destrukturyzacji przy każdej zamianie) */
+const HCAP=1<<19,HN=new Int32Array(HCAP),HF=new Float32Array(HCAP);let hLen=0;
+function hPush(n,f){if(hLen>=HCAP)return;let i=hLen++;while(i>0){const p=(i-1)>>1;if(HF[p]<=f)break;HN[i]=HN[p];HF[i]=HF[p];i=p}HN[i]=n;HF[i]=f}
+function hPop(){const top=HN[0];const n=HN[--hLen],f=HF[hLen];if(hLen>0){let i=0;for(;;){let l=2*i+1;if(l>=hLen)break;const r=l+1;if(r<hLen&&HF[r]<HF[l])l=r;if(HF[l]>=f)break;HN[i]=HN[l];HF[i]=HF[l];i=l}HN[i]=n;HF[i]=f}return top}
+/* pamięć podręczna przejezdności pól: ważna w obrębie jednego kroku symulacji */
+const pcS=new Uint32Array(MW*MH),pcV=new Uint8Array(MW*MH);let pcG=1;
+function passC(x,y){if(x<0||y<0||x>=MW||y>=MH)return false;const i=y*MW+x;if(pcS[i]===pcG)return pcV[i]===1;const v=passable(x,y);pcS[i]=pcG;pcV[i]=v?1:0;return v}
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],DX8=[1,-1,0,0,1,1,-1,-1],DY8=[0,0,1,-1,1,-1,1,-1];
 function findPath(sx2,sy2,goal,tx,ty){
   sx2=Math.max(0,Math.min(MW-1,sx2));sy2=Math.max(0,Math.min(MH-1,sy2));
-  gen++;const H=new Heap();const s=idx(sx2,sy2);gA[s]=0;stamp[s]=gen;came[s]=-1;
-  const h=(x,y)=>{const dx=Math.abs(x-tx),dy=Math.abs(y-ty);return (Math.max(dx,dy)+.414*Math.min(dx,dy))*.7};
-  H.push(s,h(sx2,sy2));let it=0;
-  while(H.a.length&&it++<40000){
-    const cur=H.pop();if(closed[cur]===gen)continue;closed[cur]=gen;
+  gen++;hLen=0;const s=sy2*MW+sx2;gA[s]=0;stamp[s]=gen;came[s]=-1;
+  const hh=(x,y)=>{const dx=Math.abs(x-tx),dy=Math.abs(y-ty);return (Math.max(dx,dy)+.414*Math.min(dx,dy))*.7};
+  hPush(s,hh(sx2,sy2));let it=0;
+  while(hLen>0&&it++<40000){
+    const cur=hPop();if(closed[cur]===gen)continue;closed[cur]=gen;
     const cx=cur%MW,cy=(cur/MW)|0;
     if(goal(cx,cy)){const p=[];let c=cur;while(c!==s&&c>=0){p.push([c%MW,(c/MW)|0]);c=came[c]}return p.reverse()}
-    for(const [dx,dy] of DIRS){
-      const nx=cx+dx,ny=cy+dy;if(!passable(nx,ny))continue;
-      if(dx&&dy&&(!passable(cx+dx,cy)||!passable(cx,cy+dy)))continue;
-      const ni=idx(nx,ny);if(closed[ni]===gen)continue;const dH=Math.abs(S.hgt[ni]-S.hgt[cur]);if(dH>.65)continue;
-      const ng=gA[cur]+(dx&&dy?1.414:1)*(isRoadG(S.ground[ni])?ROADCOST[S.ground[ni]]:S.ground[ni]===WA?3.2:1)+dH*1.6;
-      if(stamp[ni]!==gen||ng<gA[ni]){stamp[ni]=gen;gA[ni]=ng;came[ni]=cur;H.push(ni,ng+h(nx,ny))}
+    const gc=gA[cur],hc=S.hgt[cur];
+    for(let d=0;d<8;d++){
+      const dx=DX8[d],dy=DY8[d],nx=cx+dx,ny=cy+dy;if(!passC(nx,ny))continue;
+      if(dx&&dy&&(!passC(cx+dx,cy)||!passC(cx,cy+dy)))continue;
+      const ni=ny*MW+nx;if(closed[ni]===gen)continue;const dH=Math.abs(S.hgt[ni]-hc);if(dH>.65)continue;
+      const gg=S.ground[ni];const ng=gc+(dx&&dy?1.414:1)*(isRoadG(gg)?ROADCOST[gg]:gg===WA?3.2:1)+dH*1.6;
+      if(stamp[ni]!==gen||ng<gA[ni]){stamp[ni]=gen;gA[ni]=ng;came[ni]=cur;hPush(ni,ng+hh(nx,ny))}
     }
   }
   return null;
@@ -1217,7 +1232,6 @@ function runTask(s,dt){
         if(o.fallT&&S.time-o.fallT<1.5){s.working=null;return}
         t.p2=(t.p2||0)+dt*workMul(s);s.working='axe';s.chopLow=1;o.cut=Math.min(1,t.p2/5);
         if(t.p2>=5){removeObj(o);addObj('stump',o.x,o.y);const it=dropItem(o.x,o.y,'wood',o.tree==='pine'||o.tree==='modrzew'||o.tree==='buk'?5:o.tree==='birch'?3:4);
-          if(s.job==='drwal'&&S.ground[idx(o.x,o.y)]!==WA&&!bGrid[idx(o.x,o.y)])S.plant[o.x+','+o.y]={x:o.x,y:o.y,r:0};
           toolWear(s);s.chopLow=0;finish(s);chainHaul(s,it)}
         return}
       if(!t.dur){t.dur=o.type==='pine'||o.type==='modrzew'?8:o.type==='birch'?6:7;t.p=0}
@@ -1413,7 +1427,7 @@ function updAnimals(dt){
 
 /* ============================== world update ============================== */
 function update(dt){
-  S.time+=dt;
+  S.time+=dt;pcG++;
   for(const s of S.settlers.slice())updSettler(s,dt);
   separate(dt);
   updAnimals(dt);
@@ -4698,7 +4712,7 @@ function R5m(){const B=[];const h=hullS(B,{L:38,wm:15,H:15,bowRise:6,sternRise:8
 function SB0(B,x,y,z){SB.push([x,y,z,4,2.2,.5,'#a8302a'])}
 
 const defs=[
- [F1,'Wiosłówka',22,7,1.45,3.4,{oar:1}],[F2,'Żaglówka',26,8.4,1.45,4,{sail:1}],[F3,'Łódź z sieciami',24,8.6,1.45,4,{oar:1}],[F4,'Mała żaglówka',30,10,1.45,3,{sail:1}],[F6,'Duża łódź',36,12,1.4,3.4,{sail:1,oar:1}],
+ [F1,'Wiosłówka',22,7,1.0,3.4,{oar:1}],[F2,'Żaglówka',26,8.4,1.45,4,{sail:1}],[F3,'Łódź z sieciami',24,8.6,1.05,4,{oar:1}],[F4,'Mała żaglówka',30,10,1.45,3,{sail:1}],[F6,'Duża łódź',36,12,1.4,3.4,{sail:1,oar:1}],
  [R1m,'Łódź śledziowa',36,10,1.35,5,{sail:1}],[R2m,'Statek Kyrenia',40,12,1.35,5,{sail:1}],[R4m,'Barka łacińska',42,11,1.35,5,{sail:1,oar:1}],[R5m,'Kogga rybacka',38,15,1.35,7,{sail:1}]];
 const out=[];
 for(const [fn,name,L,wm,sc,deck,o] of defs){SB=[];FURL=[];OARS=[];const B=fn();out.push({name,B,SB:SB.slice(),furl:FURL.slice(),oars:OARS.slice(),geo:voxGeo(B,0),sgeo:SB.length?voxGeo(SB,0):null,L,wm,sc,deck,sail:!!o.sail,oar:!!o.oar,bowz:L+2})}
@@ -6035,7 +6049,7 @@ function animBoat(g,moving,rowing,t,seed){const u=g.userData,d=u.d;
   if(u.sail){const up=moving&&d.sail;u.sail.visible=up;u.hull.visible=up||!u.furl;u.furl.visible=!up;
     if(up){u.sail.rotation.y=Math.sin(t*.9+seed)*.035;u.sail.rotation.x=Math.sin(t*1.3+seed*2)*.012;u.sail.rotation.z=Math.sin(t*1.1+seed)*.012}}
   for(const o of u.oars){if(rowing&&d.oar){const ph=t*3.2+seed;o.m.rotation.y=o.s*Math.sin(ph)*.5;o.m.rotation.z=o.s*.34*Math.max(0,Math.sin(ph+1.6));o.m.rotation.x=0}
-    else{o.m.rotation.y=-o.s*1.38;o.m.rotation.z=o.s*.45;o.m.rotation.x=0}}}
+    else{o.m.rotation.y=o.s*1.1;o.m.rotation.z=o.s*.45;o.m.rotation.x=0}}}
 function pierDir(b){const [sx,sy,wx,wy]=b.pier;const dx=wx-sx,dy=wy-sy;let wc=0,x=wx,y=wy;while(wc<14&&inb(x,y)&&S.ground[idx(x,y)]===WA){wc++;x+=dx;y+=dy}return {dx,dy,wc}}
 function pierEnd(b){const pr0=pierRec.get(b.id);if(pr0&&pr0.E)return pr0.E;const [sx,sy]=b.pier,{dx,dy}=pierDir(b),pr=pierRec.get(b.id),L=pr?pr.L:1.6;return {ex:sx+.5+dx*(.9+L),ez:sy+.5+dy*(.9+L),dx,dy,L,sx,sy}}
 function pierUnits(){const U=[];
@@ -6977,6 +6991,7 @@ function render(){setTimeout(decorate,0);
   if(page==='main'){box.innerHTML=`<span data-px="head"></span><h1>Pintar</h1><span data-px="div"></span>
     <button class="smb" data-a="cont" ${hasSave()?'':'disabled'}>Kontynuuj</button><button class="smb" data-a="new">Nowa gra</button><button class="smb" data-a="load" ${hasSave()?'':'disabled'}>Wczytaj grę</button><button class="smb" data-a="set">Ustawienia</button><button class="smb" data-a="cred">Twórcy</button><button class="smb" data-a="quit">Wyjdź</button><span data-px="foot"></span>`}
   else if(page==='new'){box.innerHTML=`<h1>Nowa gra</h1><label>Nazwa osady<input type="text" id="smTown" maxlength="28" value="${esc(S.town||'')}"></label><label>Ziarno mapy (puste = losowa)<input type="number" id="smSeed" placeholder="np. 12345"></label>
+    <label>Rodzaj gry<select id="smKind" style="font:inherit;padding:3px;background:#f6ecd0;color:#2a1f16;border:2px solid #8a6a44"><option value="">Zwykła osada</option><option value="big">Duże miasto (test wydajności: 400 budynków, 306 osadników)</option></select></label>
     <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="smFree"> Swobodna budowa (bez kosztów)</label><button class="smb" data-a="go">Zaczynamy</button><button class="smb" data-a="back">Wróć</button>`}
   else if(page==='set'){box.innerHTML=`<h1>Ustawienia</h1><button class="smb" data-a="mus">Muzyka: ${AUDIO.on.music?'wł.':'wył.'}</button><button class="smb" data-a="sfx">Odgłosy: ${AUDIO.on.sfx?'wł.':'wył.'}</button><p class="t">Obracanie kamery: środkowy przycisk myszy lub Q i E. Przesuwanie: prawy przycisk lub WASD. Kółko przybliża; z bliska słychać osadników.</p><button class="smb" data-a="back">Wróć</button>`}
   else if(page==='cred'){box.innerHTML=`<span data-px="head"></span><h1>Twórcy</h1><span data-px="div"></span><p class="t cr"><span>Pomysł, projekt i kierunek artystyczny</span><b>twórca gry Pintar</b></p><p class="t cr"><span>Kod, modele voxelowe, animacje i dźwięk</span><b>Claude (Anthropic)</b></p><p class="t cr"><span>Silnik grafiki</span><b>Three.js</b></p><button class="smb" data-a="back">Wróć</button>`}
@@ -6988,7 +7003,7 @@ box.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a)retu
   if(k==='cont'||k==='load'){try{const d=localStorage.getItem(SAVE_KEY);loadState(JSON.parse(d));sel=null;close();msg('Wczytano grę','good')}catch(er){msg('Nie udało się wczytać zapisu','bad')}}
   else if(k==='new'){page='new';render()}else if(k==='back'){page='main';render()}else if(k==='set'){page='set';render()}else if(k==='cred'){page='cred';render()}else if(k==='quit'){page='bye';render();try{window.close()}catch(er){}}
   else if(k==='mus'){AUDIO.setMusic(!AUDIO.on.music);render()}else if(k==='sfx'){AUDIO.setSfx(!AUDIO.on.sfx);render()}
-  else if(k==='go'){const town=document.getElementById('smTown').value.trim(),sd=+document.getElementById('smSeed').value||0,fr=document.getElementById('smFree').checked;newGame(sd||undefined,town||undefined);afterWorldReset();setFree(fr);resetUi();{const ti=document.getElementById('townInput');if(ti)ti.value=S.town}close();msg(`Założono nową osadę: ${S.town}`,'good');
+  else if(k==='go'){const town=document.getElementById('smTown').value.trim(),sd=+document.getElementById('smSeed').value||0,fr=document.getElementById('smFree').checked,big=document.getElementById('smKind').value==='big';newGame(sd||undefined,town||undefined);afterWorldReset();if(big)bigCity();setFree(fr);resetUi();if(big){perfShow(true);centerOn(MW*TILE/2,MH*TILE/2)}{const ti=document.getElementById('townInput');if(ti)ti.value=S.town}close();msg(`Założono nową osadę: ${S.town}`,'good');
     let seen=false;try{seen=!!localStorage.getItem('pintar-intro')}catch(er){}if(!seen){intro.hidden=false;setSpeed(0)}}});
 document.getElementById('bMain').onclick=()=>{document.getElementById('menuPanel').hidden=true;open('main')};
 /* przeloty kamery nad przykładową osadą w tle menu */
