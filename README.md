@@ -8,12 +8,13 @@ Gra przeglądarkowa (Three.js r128, jeden plik `index.html`). Trzy sposoby uruch
 3. Po wgraniu pliki same się opublikują (zakładka **Actions**, ok. 1–2 min). Gra będzie pod adresem `https://TWOJA-NAZWA.github.io/pintar/`.
 4. Otwórz link w Chrome/Edge i kliknij ikonę **„Zainstaluj”** w pasku adresu – gra pojawi się jako aplikacja (okno bez paska przeglądarki, działa też offline).
 
-## 2. Instalator na Windows / macOS / Linux (Electron, budowany przez GitHub)
-Nic nie instalujesz u siebie – instalatory buduje GitHub.
-1. W repozytorium wejdź w **Releases → Draft a new release**, wpisz tag np. `v1.0.0` i opublikuj
-   (albo: **Actions → Instalatory → Run workflow**, gotowe pliki znajdziesz w *Artifacts*).
-2. Po kilku minutach w Release pojawią się pliki: `Pintar Setup 1.0.0.exe` (Windows), `.dmg` (macOS), `.AppImage` (Linux).
-3. Pobierz i uruchom – to zwykły instalator.
+## 2. Instalator Windows (.exe, budowany przez GitHub)
+Nic nie instalujesz u siebie – instalator buduje GitHub.
+1. Nowa wersja = nowy tag `vX.Y.Z` (np. `v1.3.0`). Po wypchnięciu tagu GitHub Actions sam zbuduje i opublikuje wydanie.
+2. Po kilku minutach w **Releases** pojawią się pliki:
+   - `Pintar-Setup-X.Y.Z.exe` – instalator (skrót na pulpicie i w menu Start),
+   - `Pintar-Portable-X.Y.Z.exe` – wersja bez instalacji.
+3. Gra startuje na pełnym ekranie (**F11** przełącza okno), działa bez internetu.
    *Windows może pokazać ostrzeżenie SmartScreen (program nie jest podpisany): „Więcej informacji → Uruchom mimo to”.*
 
 ## 3. Uruchomienie lokalne (do testów)
@@ -21,7 +22,7 @@ Potrzebny Node.js 20+.
 ```
 npm install      # pobiera Electron i three.js
 npm start        # uruchamia grę w oknie Electrona
-npm run dist     # buduje instalator dla Twojego systemu do folderu dist/
+npm run dist     # buduje instalator Windows do folderu dist/
 ```
 Klawisze: **F11** pełny ekran, **F12** narzędzia deweloperskie.
 

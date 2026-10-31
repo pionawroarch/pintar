@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Pintar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -186,29 +187,42 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
 @media (prefers-reduced-motion:reduce){.msg{transition:none}}
 
 /* ekran ładowania: młotek bije w ziemię (same animacje transform/opacity – działają, gdy skrypt jeszcze się wykonuje) */
-#loader{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(ellipse at 50% 40%,#2a2016,#0e0a06 75%);color:#f0c75e;font-family:"Pixelify Sans","Courier New",monospace;transition:opacity .35s}
+html,body{background:#0e0a06}
+#loader{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(ellipse at 50% 40%,#2a2016,#0e0a06 75%);color:#f0c75e;font-family:"Pixelify Sans","Courier New",monospace;transition:opacity .35s}
 #loader.out{opacity:0;pointer-events:none}
-#loader .ld-scene{position:relative;width:200px;height:150px;transform:scale(1.5);margin-bottom:30px}
+#loader .ld-scene{position:relative;width:200px;height:150px;transform:scale(-1.5,1.5);margin-bottom:44px}
 #loader .ld-scene div{position:absolute}
-#loader .ld-t{font-size:26px;letter-spacing:.08em;text-shadow:3px 3px 0 #3a2410;margin:0}
-#loader .ld-t i{font-style:normal;animation:ldDot 1.2s steps(1) infinite}#loader .ld-t i:nth-child(2){animation-delay:.2s}#loader .ld-t i:nth-child(3){animation-delay:.4s}
+#loader .ld-row{display:flex;align-items:flex-end;gap:10px}
+#loader .ld-img{width:216px;height:72px;image-rendering:pixelated;display:block}
+#loader .ld-dots{display:flex;gap:7px;padding-bottom:14px}
+#loader .ld-dots i{display:block;width:10px;height:10px;background:#f8c94a;box-shadow:0 0 0 2px #0c0805,3px 3px 0 2px #0c0805;animation:ldDot 1.2s steps(1) infinite}#loader .ld-dots i:nth-child(2){animation-delay:.2s}#loader .ld-dots i:nth-child(3){animation-delay:.4s}
+#loader .ld-fact{max-width:min(560px,86vw);margin:18px 0 0;text-align:center;font:16px/1.45 "Pixelify Sans","Courier New",monospace;color:#d9c9a0;min-height:3em}
+#loader .ld-fact b{display:block;color:#f6dc50;font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
 @keyframes ldDot{0%{opacity:.15}33%{opacity:1}100%{opacity:1}}
-#ldHam{left:68px;top:48px;width:0;height:0;transform-origin:0 0;will-change:transform;animation:ldHit 1s linear infinite}
-@keyframes ldHit{0%{transform:rotate(130deg);animation-timing-function:ease-out}42%{transform:rotate(142deg);animation-timing-function:cubic-bezier(.6,0,.9,.5)}66%{transform:rotate(-25deg)}71%{transform:rotate(-17deg);animation-timing-function:ease-in-out}78%{transform:rotate(-25deg);animation-timing-function:ease-in-out}100%{transform:rotate(130deg)}}
-.ldD{opacity:0;will-change:transform,opacity;animation:ldDust 1s linear infinite}
-.ldD.l{--dx:-26px}.ldD.r{--dx:26px}.ldD.s{--dx:-12px}.ldD.t{--dx:14px}
-@keyframes ldDust{0%,65%{opacity:0;transform:translate(0,0)}67%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--dx),-24px)}}
+#ldHam{left:136px;top:34px;width:0;height:0;transform-origin:0 0;will-change:transform;animation:ldHit 1.1s linear infinite}
+@keyframes ldHit{0%{transform:translate(0,-4px) rotate(98deg);animation-timing-function:ease-out}
+ 38%{transform:translate(0,-6px) rotate(112deg);animation-timing-function:cubic-bezier(.55,0,.95,.45)}
+ 56%{transform:translate(0,0) rotate(0deg);animation-timing-function:linear}
+ 60%{transform:translate(0,0) rotate(0deg);animation-timing-function:ease-in-out}
+ 100%{transform:translate(0,-4px) rotate(98deg)}}
+#ldStone{position:absolute;left:128px;top:102px;width:16px;height:16px;transform-origin:50% 100%;animation:ldStone 1.1s linear infinite}
+@keyframes ldStone{0%,55%{transform:scale(1,1)}58%{transform:scale(1.12,.7)}68%{transform:scale(1,1)}100%{transform:scale(1,1)}}
+.ldD{opacity:0;will-change:transform,opacity;animation:ldDust 1.1s linear infinite}
+.ldD.l{--dx:-22px}.ldD.r{--dx:22px}.ldD.s{--dx:-12px}.ldD.t{--dx:12px}
+@keyframes ldDust{0%,55%{opacity:0;transform:translate(0,0)}57%{opacity:1;transform:translate(0,0)}85%{opacity:0;transform:translate(var(--dx),-20px)}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){#ldHam,.ldD{animation-duration:3s}}
 </style>
 <div id="loader" role="status" aria-label="Ładuję"><div class="ld-scene" aria-hidden="true">
 <div style="left:20px;top:118px;width:160px;height:8px;background:#5d9a34"></div><div style="left:20px;top:118px;width:160px;height:2px;background:#7fb840"></div>
 <div style="left:20px;top:126px;width:160px;height:22px;background:#6b4a2c"></div>
 <div style="left:34px;top:132px;width:8px;height:6px;background:#4d3620"></div><div style="left:92px;top:136px;width:10px;height:6px;background:#4d3620"></div><div style="left:140px;top:130px;width:8px;height:6px;background:#4d3620"></div>
-<div style="left:128px;top:106px;width:16px;height:12px;background:#8a8f98"></div><div style="left:132px;top:102px;width:8px;height:4px;background:#8a8f98"></div>
+<div id="ldStone"><div style="left:0;top:4px;width:16px;height:12px;background:#8a8f98;box-shadow:inset 0 3px #aeb4bd,inset 0 -3px #6c7078"></div><div style="left:4px;top:0;width:8px;height:4px;background:#aeb4bd"></div></div>
 <div id="ldHam"><div style="left:-3px;top:0;width:6px;height:56px;background:#8a5a2c;box-shadow:inset 2px 0 #a8742e,inset -2px 0 #5e3a1a"></div><div style="left:-20px;top:46px;width:40px;height:22px;background:#8c929c;box-shadow:inset 0 4px #b8bec8,inset 0 -4px #5c626c,inset 4px 0 #6f7580,inset -4px 0 #6f7580"></div></div>
-<div class="ldD l" style="left:86px;top:112px;width:6px;height:6px;background:#c9a66b"></div><div class="ldD r" style="left:94px;top:110px;width:6px;height:6px;background:#a8845a"></div><div class="ldD s" style="left:90px;top:114px;width:4px;height:4px;background:#7fb840"></div><div class="ldD t" style="left:98px;top:114px;width:4px;height:4px;background:#c9a66b"></div>
-</div><p class="ld-t">Ładuję<i>.</i><i>.</i><i>.</i></p></div>
-<script>setTimeout(function(){var l=document.getElementById('loader');if(l)l.remove()},25000)</script>
+<div class="ldD l" style="left:122px;top:111px;width:6px;height:6px;background:#c9a66b"></div><div class="ldD r" style="left:144px;top:109px;width:6px;height:6px;background:#a8845a"></div><div class="ldD s" style="left:130px;top:98px;width:4px;height:4px;background:#e0dcd0"></div><div class="ldD t" style="left:138px;top:98px;width:4px;height:4px;background:#e0dcd0"></div>
+
+</div><div class="ld-row"><img class="ld-img" alt="Ładuję" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAA8CAYAAADPLpCHAAAERklEQVR4AexcPWtVURA8BkQR7URQ0NLCylqxEbQU/4Eg4m+wsrCytkwhCGltLBVsJNYWNrGMhSLBRgvFQhnTTOaGt3dzbnTveyNs2M1+zw5yeDxdO3n86O8eaZ1/eno7d3g7PceyYaT7qb2mv7BtBOaMgAk95+t59gECJvQAEv9izggMCP3ty7O2SHTZ6I0Wxat/Ue8xPq2n9pgamRitr3ZUS+PVzubrPbL1sv2i+F6/zq/7qT0gtBawvSwIrMYeJvRq3HlltjShV+bUq7FoSOifOy8ay9Sw6BuLex1E13rRvAfpwTm9/aL51M+9oas/a6NGRqL6mVpjYqN+6g8JrQm2jUBlBEzoytfxbGkETOjWWho1J5RFIE1ofTOqrZvq54Tqj+zTl563RXLs9K3Gou+yqL76F/WCj3tB7+2n/Q/bPnXmTmPBDizaHzuzqD+yOfcgelRf/WlCawHbRqASAiZ0pWt4lm4ETOhuCF2gEgIhob9++NxYPr1db4ukdznuBV3f6GrrLMhhiebhWOhRvPqRw6J+tTkWuvojGzksUXzWz7Wh9+brvSI720/jA0JruG0jUBsBE7r2fTxdEgETOgmYw2sj0E3oi7c3G8vU6+obWe2p+7netAjovSK7t3s3oXsHcL4RmBIBE3pKNOdca0lmN6GX5JBeYxeBkNAbT7YbC7+Xoe+Wme4n94KOHovk7JX7jQU5LNFkHAs9ilc/cljUrzbHQld/ZCOHReP1c96H1883Fo1Xm2tDV39kI4dl0e3280X11f/9x68jLCGhtYBtI1AZARO68nU8WxoBEzoNmRMqIxAS+sbNC43lzeOrLSP8foNeDQzeDfo+u+3Z993T9caS3Qc9WP53P94FenYfjefdoEf7qR8cYdH6auv37UNCawHbRqAyAiZ05et4tjQCJnQaMidURsCETl7n1cvtxvLo9cfGouX43+9Bv3z3fmPReLW5F3TuBV3j0YOFe0HXeNRkQU0Wja9um9DVL+T5Ugj0ETrVysFG4PARMKEPH2N3+IcIDAjN7y/o1x5sth7h9xh03Q09WBDDovFqcy50zoUexWd3Q00WrR/ZmJEl6s+9oEf11c+9oGs/1GTR/MhGTRatr7bW4/c7dJ4FusZH9oDQUYL9RqAyAiZ05et4tjQCJnQastVMmMvWa/xdUuhzGdxzzhOBrfc7jeXCuRONhb/HAT27pf+GziLm+NIImNClz+PhsgiY0FnEHF8aARO69HmWb7h7G1uNZeoNTehuRF2gEgImdKVreJZuBEzobghdoBICA0Ljs2jL3v/rwXhMh4eSn9/T0PH9DRaNj+wBoaME+41AZQRM6MrX8WxpBA6V0OlpnGAEOhEwoTsBdHotBEzoWvfwNJ0ImNCdADq9FgImdK17eJpOBEzoTgCd/heB0T/0M/3RiSMDTeiRQDlsHgiY0PO4k6cciYAJPRIoh80DgT8AAAD//9O2ZNoAAAAGSURBVAMAxYuewoA5hTMAAAAASUVORK5CYII="><div class="ld-dots"><i></i><i></i><i></i></div></div>
+<p class="ld-fact" id="ldFact"></p></div>
+<script>(function(){var F=["Strzecha przy dobrej konserwacji potrafiła przetrwać kilkadziesiąt lat, a cenne gonty i dachówki pokazywały bogactwo właściciela.", "Szachulec: drewniany szkielet wypełniony gliną i słomą. W Polsce widać go do dziś na Dolnym Śląsku i Pomorzu.", "Hanza była związkiem miast kupieckich. Jej statki, kogi, woziły zboże, sól, drewno i śledzie przez całe Morze Bałtyckie.", "Kogga, typowy statek Hanzy, miała płaskie dno i wysokie burty, a w ładowni mieściło się nawet około 200 ton towaru.", "W Pintarze osadnicy po drogach chodzą szybciej: nawet o 50%, jeśli droga jest brukowana.", "Wskazówka: klawisz T zmienia wygląd budynku przed postawieniem, a R obraca go o 90 stopni.", "Wskazówka: F3 pokazuje FPS, liczbę draw calls i nazwę używanej karty graficznej.", "Wskazówka: leśnik sam sadzi drzewa, a drwal tylko ścina. Zadbaj o oba zawody, żeby las nie zniknął.", "Studnie w średniowiecznych miastach stały zwykle na rynku. To tam wymieniano plotki równie chętnie jak wodę.", "Młyny wodne znano w Europie już w czasach Rzymian, ale w średniowieczu rozpowszechniły się w każdej większej osadzie.", "Wskazówka: mały spichlerz możesz postawić od początku gry, bez badań i bez desek.", "Browary, piekarnie i karczmy poprawiają nastrój osadników. Syty i wesoły osadnik pracuje wydajniej.", "Dzwony kościelne wyznaczały rytm dnia: wzywały na mszę, ostrzegały przed pożarem i oznaczały godziny pracy.", "Wskazówka: dymki rozmów widać dopiero przy dużym przybliżeniu kamery. Kliknij osadnika, by zobaczyć całą rozmowę."],el=document.getElementById('ldFact'),i=Math.floor(Math.random()*F.length);function show(){if(!el||!el.isConnected)return;var f=F[i%F.length],p=f.indexOf('Wskazówka:')===0;el.innerHTML='<b>'+(p?'Wskazówka':'Ciekawostka')+'</b>'+(p?f.slice(10).trim():f);i++}show();var iv=setInterval(function(){if(!document.getElementById('ldFact')){clearInterval(iv);return}show()},4500);setTimeout(function(){var l=document.getElementById('loader');if(l)l.remove()},25000)})()</script>
 
 <div id="app">
   <header id="top">
@@ -268,7 +282,8 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-
   <nav id="tools"></nav>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
 <script type="text/plain" id="gameSrc">
 'use strict';
 /* ============================== constants ============================== */
@@ -5454,7 +5469,7 @@ function syncBuildings(t,dt){
       if(!rec.clipMat){rec.plane=new THREE.Plane(new THREE.Vector3(0,-1,0),0);rec.clipMat=matV.clone();rec.clipMat.clippingPlanes=[rec.plane];rec.clipMat.clipShadows=true;rec.main.material=rec.clipMat}
       rec.plane.constant=by+Math.max(10,rec.M.H)*V*1.04*b.progress+.02;rec.main.visible=b.progress>0;
     }
-    const isSel=sel&&sel.kind==='building'&&sel.id===b.id;rec.ghost.visible=!b.built;rec.frame.visible=!b.built||isSel;rec.arrow.visible=!!isSel&&!d.zone;if(isSel)rec.arrow.position.z=rec.M.D/2+.25+Math.sin(t*4)*.07;
+    const isSel=sel&&sel.kind==='building'&&sel.id===b.id;rec.ghost.visible=!b.built;rec.frame.visible=(!b.built||isSel)&&!window.DEMO_ON;rec.arrow.visible=!!isSel&&!d.zone;if(isSel)rec.arrow.position.z=rec.M.D/2+.25+Math.sin(t*4)*.07;
     if(rec.scaf)rec.scaf.visible=!b.built;
     syncSite(rec,b);
     const busy=busyB.has(b.id);
@@ -5731,10 +5746,14 @@ function syncLabels(){
     else if(s.sleeping&&near)need.push({p:[rec.g.position.x,rec.g.position.y+.45,rec.g.position.z],c:'zz'});
     else if(s.hunger<15)need.push({html:'<svg width="26" height="26" viewBox="0 0 26 26" style="display:block"><g stroke="#2a1a10" stroke-width="3.2" stroke-linecap="round" fill="none"><path d="M8 3v7M5 3v6a3 3 0 0 0 6 0V3M8 10v12"/><path d="M18 3c-3 2-3 8 0 10v9"/></g><g stroke="#f4ecd8" stroke-width="1.8" stroke-linecap="round" fill="none"><path d="M8 3v7M5 3v6a3 3 0 0 0 6 0V3M8 10v12"/><path d="M18 3c-3 2-3 8 0 10v9"/></g><path d="M3 23L23 3" stroke="#2a1a10" stroke-width="4.6" stroke-linecap="round"/><path d="M3 23L23 3" stroke="#d8352a" stroke-width="2.8" stroke-linecap="round"/></svg>',p:[rec.g.position.x,rec.g.position.y+1.12,rec.g.position.z],c:'hungry'})}
   if(near)for(const b of houses()){if(!insideB.has(b.id)||!inView(b.x,b.y,viewRadius()))continue;if(!S.settlers.some(s=>s.home===b.id&&s.sleeping&&s.hidden))continue;const M=getModel(b),[w,h]=dims(b);need.push({p:[b.x+w/2,hg(b.x,b.y)+M.H*V+.25,b.y+h/2],c:'zz'})}
+  {const cand=[];const close=camS.dist<26;
   for(const C of CHATS.values()){if(!C.start||C.done||!C.lines)continue;const a=sById(C.a),b=sById(C.b);if(!a||!b)continue;const ra=sRec.get(a.id),rb=sRec.get(b.id);if(!ra||!rb||!ra.g.visible)continue;
-    const open=sel&&sel.kind==='settler'&&(sel.id===a.id||sel.id===b.id);
+    const open=sel&&sel.kind==='settler'&&(sel.id===a.id||sel.id===b.id);if(!open&&!close)continue;
+    cand.push({open,d:Math.hypot((ra.g.position.x+rb.g.position.x)/2-camS.tx,(ra.g.position.z+rb.g.position.z)/2-camS.tz),C,a,b,ra,rb})}
+  cand.sort((p,q)=>(q.open-p.open)||p.d-q.d);
+  for(const {open,C,a,b,ra,rb} of cand.slice(0,6)){
     need.push({p:[(ra.g.position.x+rb.g.position.x)/2,Math.max(ra.g.position.y,rb.g.position.y)+1.25,(ra.g.position.z+rb.g.position.z)/2],c:'chat'+(open?' open':'')+(C.lines.k==='-'?' argue':C.lines.k==='love'?' love':''),
-      html:`<span class="dots"><i></i><i></i><i></i></span><span class="full"><b>${a.name}:</b> ${C.lines.la}<br><b>${b.name}:</b> ${C.lines.lb}</span>`})}
+      html:`<span class="dots"><i></i><i></i><i></i></span><span class="full"><b>${a.name}:</b> ${C.lines.la}<br><b>${b.name}:</b> ${C.lines.lb}</span>`})}}
   if(mercRec&&S.merchant){const m=S.merchant;need.push({t:m.state==='stay'?m.name+' · kliknij, by handlować':m.name,p:[mercRec.g.position.x,mercRec.g.position.y+1.6,mercRec.g.position.z],c:'merc'})}
   if(hoverAnimal&&hoverAnimal.name)need.push({t:hoverAnimal.name,p:[hoverAnimal.x+.5,hg(Math.round(hoverAnimal.x),Math.round(hoverAnimal.y))+.55,hoverAnimal.y+.5],c:'nm'});
   for(const L of need){let el=labelPool[n];if(!el){el=document.createElement('div');labelsEl.appendChild(el);labelPool.push(el)}
@@ -6818,7 +6837,7 @@ function frame(now){
     if(keys.has('q'))camS.yaw+=dt*1.8;if(keys.has('e'))camS.yaw-=dt*1.8;clampCam()}
   if(!EVT.open)eventTick();acc+=dt*speed;let n=0;const STEP=1/30;while(acc>=STEP&&n<12){update(STEP);acc-=STEP;n++}if(n>=12)acc=0;const pf1=performance.now();
   if(terrDirty){terrDirty=false;buildTerrain3D()}
-  updateSky();syncDecor();syncObjs(t);syncCrops();syncBuildings(t,dt);syncPiers();syncSettlers(dt,t);syncMerchant(dt);syncWild(dt*Math.min(speed,2));syncAnimals(t,dt);syncFish(t,dt);syncShips(t);syncFx(t);syncOverlay();placeCamera();
+  updateSky();syncDecor();syncObjs(t);syncCrops();syncBuildings(t,dt);syncPiers();if(!window.DEMO_ON){syncSettlers(dt,t);syncMerchant(dt);syncWild(dt*Math.min(speed,2));syncAnimals(t,dt);syncFish(t,dt)}syncShips(t);syncFx(t);syncOverlay();placeCamera();
   try{AUDIO.tick(dt)}catch(e){}
   const pf2=performance.now();renderer.render(scene,camera);syncLabels();const pf3=performance.now();perfTick(pf3-pf0,pf1-pf0,pf2-pf1,pf3-pf2);
   uiT+=dt;if(uiT>.3){uiT=0;updateHUD();refreshPanel(false)}
@@ -6988,14 +7007,14 @@ function artFoot(){return pxC(124,34,(R)=>{const P=PXP;
   R(P.wk,50,6,1,12);R(P.rf,51,6,7,4);R(P.wh,53,7,3,1)});}
 function artTorch(){const wrap=document.createElement('div');wrap.className='torch';const base=pxC(8,14,(R)=>{const P=PXP;R(P.wk,3,5,2,9);R(P.gk,2,4,4,2);R(P.sd,2,12,4,2)}),fl=pxC(8,6,(R)=>{const P=PXP;R(P.rf,2,3,4,3);R(P.fl,1,1,6,4);R(P.fy,3,0,2,4);R(P.fy,2,3,4,2)});fl.className='px fl';fl.style.cssText='position:absolute;left:0;top:-14px;width:100%';wrap.style.height='46px';base.style.cssText='position:absolute;left:0;top:0;width:100%';wrap.append(base,fl);return wrap}
 function fit(){box.style.transform='';const k=Math.min(1,(innerHeight*.94)/box.offsetHeight,(innerWidth-8)/box.offsetWidth);box.style.transform=k<1?'scale('+k+')':'';box.style.transformOrigin='center center'}
-function decorate(){box.querySelectorAll('h1').forEach(h=>{const t=h.textContent;const c=t==='Pintar'?pxLogo():pxText(t,t.length>11?3:4);c.setAttribute('aria-label',t);c.style.margin='0 auto 8px';c.style.display='block';c.style.maxWidth='100%';c.style.height='auto';h.replaceWith(c)});
+function decorate(){if(!box._pend)return;box._pend=0;box.querySelectorAll('h1').forEach(h=>{const t=h.textContent;const c=t==='Pintar'?pxLogo():pxText(t,t.length>11?3:4);c.setAttribute('aria-label',t);c.style.margin='0 auto 8px';c.style.display='block';c.style.maxWidth='100%';c.style.height='auto';h.replaceWith(c)});
   box.querySelectorAll('button.smb').forEach(b=>{const t=b.textContent;b.setAttribute('aria-label',t);b.textContent='';const c=pxText(t,3);c.style.display='block';c.style.margin='0 auto';c.style.maxWidth='100%';c.style.height='auto';b.appendChild(c)});
   box.querySelectorAll('[data-px]').forEach(el=>{const k=el.dataset.px,c=k==='head'?artHead():k==='foot'?artFoot():artDiv();c.classList.add(k==='head'||k==='foot'?'hd':'dv');el.replaceWith(c)});
   const l=artTorch(),r=artTorch();l.classList.add('l');r.classList.add('r');box.append(l,r);fit()}
 const hasSave=()=>{try{return !!localStorage.getItem(SAVE_KEY)}catch(e){return false}};
 function close(){ov.classList.remove('on');stopDemo();setSpeed(1);try{AUDIO.start()}catch(e){}updateHUD();refreshPanel(true)}
 function resetUi(){const bt=document.getElementById('bFree');bt.classList.toggle('on',!!S.free);bt.textContent=S.free?'Swobodna budowa: wł.':'Swobodna budowa';sel=null;centerOn(MW*TILE/2,MH*TILE/2)}
-function render(){setTimeout(decorate,0);
+function render(){box._pend=1;setTimeout(decorate,0);
   if(page==='main'){box.innerHTML=`<span data-px="head"></span><h1>Pintar</h1><span data-px="div"></span>
     <button class="smb" data-a="cont" ${hasSave()?'':'disabled'}>Kontynuuj</button><button class="smb" data-a="new">Nowa gra</button><button class="smb" data-a="load" ${hasSave()?'':'disabled'}>Wczytaj grę</button><button class="smb" data-a="set">Ustawienia</button><button class="smb" data-a="cred">Twórcy</button><button class="smb" data-a="quit">Wyjdź</button><span data-px="foot"></span>`}
   else if(page==='new'){box.innerHTML=`<h1>Nowa gra</h1><label>Nazwa osady<input type="text" id="smTown" maxlength="28" value="${esc(S.town||'')}"></label><label>Ziarno mapy (puste = losowa)<input type="number" id="smSeed" placeholder="np. 12345"></label>
@@ -7006,7 +7025,7 @@ function render(){setTimeout(decorate,0);
   else if(page==='bye'){box.innerHTML=`<span data-px="head"></span><h1>Do zobaczenia</h1><span data-px="div"></span><p class="t" style="text-align:center">Dziękujemy za grę w Pintar. Możesz teraz zamknąć tę kartę przeglądarki.</p><button class="smb" data-a="back">Wróć do menu</button>`}
   else{box.innerHTML=`<h1>Jak grać</h1><p class="t"><b>Wytnij</b> i <b>Kop</b>: oznacz drzewa i skały. <b>Mieszkania</b> dają łóżka, <b>Rolnictwo</b> – pola, sady i zagrody. <b>Pracownicy</b> to przydziały do warsztatów, <b>Handel</b> ustawia automatyczny zakup i sprzedaż kupcom na targu i w porcie. Co jakiś czas zdarzenia losowe zapytają Cię o decyzję.</p><button class="smb" data-a="back">Wróć</button>`}
 }
-function open(p){page=p||'main';render();ov.classList.add('on');if(!demoOn)setSpeed(0)}
+function open(p){page=p||'main';render();try{decorate()}catch(e){}ov.classList.add('on');if(!demoOn)setSpeed(0)}
 box.addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
   if(k==='cont'||k==='load'){try{const d=localStorage.getItem(SAVE_KEY);loadState(JSON.parse(d));sel=null;close();msg('Wczytano grę','good')}catch(er){msg('Nie udało się wczytać zapisu','bad')}}
   else if(k==='new'){page='new';render()}else if(k==='back'){page='main';render()}else if(k==='set'){page='set';render()}else if(k==='cred'){page='cred';render()}else if(k==='quit'){page='bye';render();try{window.close()}catch(er){}}
@@ -7017,7 +7036,7 @@ document.getElementById('bMain').onclick=()=>{document.getElementById('menuPanel
 /* przeloty kamery nad przykładową osadą w tle menu */
 let demoOn=false,demoPts=[],demoT=0,demoLast=0;
 function startDemo(){
-  try{window.DEMO_HOUR=10.5;newGame(20261030);afterWorldReset();S.time=DAY*9/24;const cx=MW>>1,cy=MH>>1;
+  try{window.DEMO_HOUR=10.5;window.DEMO_ON=true;newGame(20261030);afterWorldReset();S.time=DAY*9/24;const cx=MW>>1,cy=MH>>1;
     const plan=[['ratusz',-4,-14],['targ',2,-2],['karczma',-12,-2],['dom',-9,-9],['dom',-14,-9],['kamienica',12,-8],['blizniak',16,-14],['dom',-18,-14],['chalupa',-20,-6],['dom_kupca',-14,8],['podcienia',-6,8],['szkola',14,2],['szpital',-24,4],['kuznia',8,-14],['donjon',-8,14],['kaplica',12,10],['kosciol',4,16],['chata_rolnika',20,-12],['biblioteka',-30,-8],['stajnia',22,12],['wiatrak',26,2],['mlyn',26,2],['piekarnia',6,-8],['scena',3,8],['biesiada',-2,2],['fontanna',0,-6],['studnia',-6,-4],['latarnia',-3,-2],['latarnia',5,-2],['ognisko',-5,4]];
     {const hs=['dom','chalupa','kamienica','blizniak','dom_kupca','dom','chalupa','dom'];let q=0;
       for(const dy of [-9,-15,3,13,19,-21,25])for(let dx=-42;dx<=42;dx+=7){if(Math.abs(dx)<4&&Math.abs(dy)<10)continue;plan.push([hs[(q++)%hs.length],dx+((q*5)%3)-1,dy+((q*7)%3)-1])}
@@ -7035,7 +7054,7 @@ function startDemo(){
     for(let i=0;i<480;i++){try{update(.25)}catch(e){break}}
     S.settlers.forEach(q=>{if(q.x==null||q.y==null){q.x=cx;q.y=cy}});
     {const p0=demoPts[0]||[cx,cy];camS.tx=p0[0];camS.tz=p0[1];}camS.dist=58;camS.pitch=.62;document.body.classList.add('inMenu');{let fd=document.getElementById('menuFade');if(!fd){fd=document.createElement('div');fd.id='menuFade';document.body.appendChild(fd)}fd.classList.remove('off');void fd.offsetWidth;setTimeout(()=>fd.classList.add('off'),120);setTimeout(()=>{try{fd.remove()}catch(e){}},4200)}
-    demoOn=true;demoT=0;demoLast=performance.now();ov.classList.add('demo');setSpeed(1);speed=.4;requestAnimationFrame(demoLoop)}catch(e){demoOn=false;ov.classList.remove('demo')}}
+    demoOn=true;demoT=0;demoLast=performance.now();ov.classList.add('demo');setSpeed(1);speed=.4;requestAnimationFrame(demoLoop)}catch(e){demoOn=false;window.DEMO_ON=false;ov.classList.remove('demo')}}
 function demoLoop(now){if(!demoOn)return;const dt=Math.max(0,Math.min(.1,(now-demoLast)/1000));demoLast=now;demoT+=dt;
   /* powolny, filmowy dolly: kamera krąży nisko nad miastem i płynnie przechodzi między punktami */
   const n=demoPts.length,f=demoT/16,i=Math.floor(f)%n,j=(i+1)%n,u=f-Math.floor(f),e=u*u*(3-2*u),A=demoPts[i]||demoPts[0],B=demoPts[j]||A;
@@ -7043,8 +7062,27 @@ function demoLoop(now){if(!demoOn)return;const dt=Math.max(0,Math.min(.1,(now-de
   camS.tx+=(tx-camS.tx)*k;camS.tz+=(tz-camS.tz)*k;camS.yaw+=dt*.045*ez2;camS.dist+=((26+6*Math.sin(demoT*.12))-camS.dist)*Math.min(1,dt*.35*ez2);camS.pitch+=(.38+.08*Math.sin(demoT*.09)-camS.pitch)*Math.min(1,dt*.35*ez2);
   try{clampCam()}catch(e){}
   requestAnimationFrame(demoLoop)}
-function stopDemo(){demoOn=false;window.DEMO_HOUR=null;ov.classList.remove('demo');document.body.classList.remove('inMenu');camS.pitch=.9;camS.dist=44}
-window._menuUp=true;intro.hidden=true;open('main');{const L=document.getElementById('loader');if(L){L.classList.add('out');setTimeout(()=>L.remove(),400)}}(function w(){if(window._started){if(ov.classList.contains('on'))startDemo()}else setTimeout(w,80)})()})();
+function stopDemo(){demoOn=false;window.DEMO_HOUR=null;window.DEMO_ON=false;ov.classList.remove('demo');document.body.classList.remove('inMenu');camS.pitch=.9;camS.dist=44}
+window.pxText=pxText;
+/* ===== pasek górny i menu rozwijalne w stylu menu głównego (kamienne płyty, złote napisy pikselowe) ===== */
+Object.assign(PXF,{':':'00000 00100 00100 00000 00100 00100 00000','+':'00000 00100 00100 11111 00100 00100 00000','×':'00000 10001 01010 00100 01010 10001 00000',',':'00000 00000 00000 00000 00110 00100 01000','·':'00000 00000 00000 00100 00000 00000 00000'});
+{const stT=document.createElement('style');stT.textContent=`:root{--plq:url(${plaqueURL()})}
+#top{background:linear-gradient(#2a1d12,#150d08)!important;border-bottom:3px solid #b8923a!important;box-shadow:inset 0 -3px 0 #120c08,0 3px 0 rgba(0,0,0,.5)!important}
+#top .btn.pxb,#menuPanel .btn.pxb{background:none!important;border:6px solid transparent!important;border-image-source:var(--plq)!important;border-image-slice:8 fill!important;border-image-width:6px!important;border-image-repeat:stretch!important;box-shadow:none!important;padding:2px 3px!important;image-rendering:pixelated;display:inline-flex;align-items:center;justify-content:center;outline:none!important;cursor:pointer;min-height:0}
+#top .btn.pxb canvas,#menuPanel .btn.pxb canvas{display:block;image-rendering:pixelated}
+#top .btn.pxb:hover,#menuPanel .btn.pxb:hover{filter:brightness(1.12) saturate(1.15)}#top .btn.pxb:active,#menuPanel .btn.pxb:active{transform:translateY(2px)}
+#top .btn.pxb.on{filter:brightness(1.15) sepia(.85) saturate(2.4) hue-rotate(-8deg)}
+#top .btn.pxb .burger i{background:#3a2a1c}
+#menuPanel{background:rgba(14,9,5,.94)!important;border:none!important;border-radius:0!important;box-shadow:inset 0 0 0 3px #b8923a,inset 0 0 0 6px #120c08,0 6px 18px rgba(0,0,0,.6)!important;padding:12px!important;gap:3px!important;min-width:230px!important}
+#menuPanel .btn.pxb{width:100%}
+#brand .logo canvas{display:block;image-rendering:pixelated}#brand .logo{text-shadow:none!important}`;document.head.appendChild(stT);
+const pxTxt=(b)=>{const c=b.firstChild;if(!c||c.nodeType!==3)return;const tx=c.textContent.trim();if(!tx)return;b.setAttribute('aria-label',tx);b.textContent='';const cv=pxText(tx,2);cv.style.width=Math.round(cv.width*.72)+'px';cv.style.height=Math.round(cv.height*.72)+'px';b.appendChild(cv)};
+const skin=(b,txt)=>{if(b._pxs)return;b._pxs=1;b.classList.add('pxb');if(!txt)return;pxTxt(b);new MutationObserver(()=>pxTxt(b)).observe(b,{childList:true})};
+document.querySelectorAll('#top .grp .btn').forEach(b=>skin(b,true));
+document.querySelectorAll('#menuPanel .btn').forEach(b=>skin(b,true));
+skin(document.getElementById('bBurger'),false);
+const lg=document.querySelector('#brand .logo');if(lg){lg.setAttribute('aria-label','Pintar');lg.textContent='';const lc=pxLogo();lc.classList.remove('logo');lc.style.width=Math.round(lc.width/8*3)+'px';lc.style.height='auto';lg.appendChild(lc)}}
+window._menuUp=true;intro.hidden=true;open('main');const endLoad=()=>(function hideLoader(){const L=document.getElementById('loader');if(!L)return;if(box._pend){setTimeout(hideLoader,30);return}requestAnimationFrame(()=>{L.classList.add('out');setTimeout(()=>L.remove(),400)})})();;(function w(){if(window._started){if(ov.classList.contains('on')){try{startDemo()}catch(e){}}requestAnimationFrame(()=>requestAnimationFrame(endLoad))}else setTimeout(w,80)})()})();
 
 /* ---------- ikony 3D (izometryczny render modelu voxelowego) ---------- */
 function isoRender(boxes,W,D,px){
@@ -7098,3 +7136,5 @@ function toolBoxes(kind,key){const CROPCOL={wheat:['#e0c050','#c8a838'],corn:['#
 function icon3d(kind,key,fallback){const _ti=window._ti||(window._ti={});const k=kind+':'+key;if(_ti[k])return _ti[k];try{return _ti[k]=isoRender(toolBoxes(kind,key),16,16,40)}catch(e){return _ti[k]=fallback?iconURL(fallback()):''}}
 </script>
 <script>(function(){function run(){var s=document.createElement('script');s.text=document.getElementById('gameSrc').textContent;document.body.appendChild(s)}requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(run,80)})})})()</script>
+
+</body></html>
