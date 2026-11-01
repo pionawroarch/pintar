@@ -4,7 +4,7 @@ const path = require('path');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1400, height: 860, minWidth: 900, minHeight: 600,
+    width: 1920, height: 1080, minWidth: 900, minHeight: 600,
     backgroundColor: '#0e0a06', title: 'Pintar', autoHideMenuBar: true, fullscreen: true, show: false,
     icon: path.join(__dirname, '..', 'icons', 'icon-512.png'),
     webPreferences: { contextIsolation: true, sandbox: true, autoplayPolicy: 'no-user-gesture-required', backgroundThrottling: false }
