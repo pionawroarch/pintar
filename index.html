@@ -345,7 +345,7 @@ body.nohint #hint{display:none!important}body.nolog #log{display:none!important}
 'use strict';
 /* ============================== constants ============================== */
 const TILE=16, DAY=600;let TEX=7, MW=960, MH=720;
-const GR=0, WA=1, SA=2, DI=3, PA=4, RK=5, SN=6, STEP=.2, TOL=.41;let terrDirty=false;const ROADG={droga:4,droga_grunt:7,droga_zwir:8,droga_ceg:9};const isRoadT=t=>ROADG[t]!==undefined;const isRoadG=g=>g===4||g>=7;const ROADSPD={4:1.4,7:1.2,8:1.3,9:1.5},ROADCOST={4:.7,7:.85,8:.78,9:.65};
+const GR=0, WA=1, SA=2, DI=3, PA=4, RK=5, SN=6, STEP=.2, TOL=.41;let terrDirty=false,terrRect=null,terrAll=false;function tmark(x0,y0,x1,y1){if(terrAll)return;if(!terrRect)terrRect={x0,y0,x1,y1};else{if(x0<terrRect.x0)terrRect.x0=x0;if(y0<terrRect.y0)terrRect.y0=y0;if(x1>terrRect.x1)terrRect.x1=x1;if(y1>terrRect.y1)terrRect.y1=y1}}const ROADG={droga:4,droga_grunt:7,droga_zwir:8,droga_ceg:9};const isRoadT=t=>ROADG[t]!==undefined;const isRoadG=g=>g===4||g>=7;const ROADSPD={4:1.4,7:1.2,8:1.3,9:1.5},ROADCOST={4:.7,7:.85,8:.78,9:.65};
 const RES=['wood','planks','firewood','stone','iron','tools','grain','corn','cabbage','carrot','potato','flour','bread','berries','fish','meat','milk','eggs','honey','beer','wool','cloth','coins'];
 const RNAME={wood:'Drewno',planks:'Deski',firewood:'Opał',stone:'Kamień',iron:'Żelazo',tools:'Narzędzia',grain:'Pszenica',corn:'Kukurydza',cabbage:'Kapusta',carrot:'Marchew',potato:'Ziemniaki',flour:'Mąka',bread:'Chleb',berries:'Jagody',fish:'Ryby',meat:'Mięso',milk:'Mleko',eggs:'Jajka',honey:'Miód',beer:'Piwo',wool:'Wełna',cloth:'Sukno',coins:'Grosze'};
 const RGEN={wood:'drewno',planks:'deski',firewood:'opał',stone:'kamień',iron:'żelazo',tools:'narzędzia',grain:'pszenicę',corn:'kukurydzę',cabbage:'kapustę',carrot:'marchew',potato:'ziemniaki',flour:'mąkę',bread:'chleb',berries:'jagody',fish:'ryby',meat:'mięso',milk:'mleko',eggs:'jajka',honey:'miód',beer:'piwo',wool:'wełnę',cloth:'sukno',coins:'grosze'};
@@ -1166,9 +1166,9 @@ function coneSmooth(core,R,lim,limH){if(limH===undefined)limH=lim;let x0=1e9,y0=
   for(let Y=y0-R;Y<=y1+R;Y++)for(let X=x0-R;X<=x1+R;X++){if(!inb(X,Y)||cs.has(X+','+Y))continue;const k=idx(X,Y),g=S.ground[k];if(g===WA||bGrid[k])continue;
     let lo=-99,hi=99,dm=1e9;for(const c of core){const dx=c[0]-X,dy=c[1]-Y,d2=dx*dx+dy*dy,dd=Math.sqrt(d2);if(dd<dm)dm=dd;const dl=dd*lim,dh=dd*limH;if(c[2]-dl>lo)lo=c[2]-dl;if(c[2]+dh<hi)hi=c[2]+dh}
     if(lo>hi)continue;const e=S.hgt[k];let n=Math.min(hi,Math.max(lo,e));n=Math.max(0,Math.min(46,qq(n)));if(Math.abs(n-e)>1e-6){S.hgt[k]=n;ch=true}}
-  if(ch){terrDirty=true;objDirty=decorDirty=true}return ch}
+  if(ch){terrDirty=true;tmark(x0-R-1,y0-R-1,x1+R+1,y1+R+1);objDirty=decorDirty=true}return ch}
 function footOkB(x,y,w,h){const [lo,hi]=footR(x,y,w,h);return hi-lo<=SLP+1e-6}
-function levelFoot(x,y,w,h){const a=[];for(let j=0;j<h;j++)for(let i=0;i<w;i++)a.push(S.hgt[idx(x+i,y+j)]);a.sort((p,q)=>p-q);const t=a[a.length>>1];let ch=false;for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=idx(x+i,y+j);if(S.hgt[k]!==t){S.hgt[k]=t;ch=true}}if(ch){terrDirty=true;objDirty=decorDirty=true}{const core=[];for(let j=0;j<h;j++)for(let i=0;i<w;i++)core.push([x+i,y+j,t]);coneSmooth(core,16,SLOPE_LIM)}return ch}
+function levelFoot(x,y,w,h){const a=[];for(let j=0;j<h;j++)for(let i=0;i<w;i++)a.push(S.hgt[idx(x+i,y+j)]);a.sort((p,q)=>p-q);const t=a[a.length>>1];let ch=false;for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=idx(x+i,y+j);if(S.hgt[k]!==t){S.hgt[k]=t;ch=true}}if(ch){terrDirty=true;tmark(x-2,y-2,x+w+2,y+h+2);objDirty=decorDirty=true}{const core=[];for(let j=0;j<h;j++)for(let i=0;i<w;i++)core.push([x+i,y+j,t]);coneSmooth(core,16,SLOPE_LIM)}return ch}
 function isWallTile(x,y){if(!inb(x,y))return false;const i=bGrid[idx(x,y)],b=i&&S.buildings[i];return !!b&&(b.type==='mur'||b.type==='mur_h')}
 /* ---- port morski: lokalne woksele (16 = 1 pole) -> świat; rozmiar z BDEF (bez modelu) ---- */
 const SEAC={LD:160,SPX:104,SPW:32,SP0:160,NF:5,FS:60,FL:96,FW:14,F0:40,SPL:314};
@@ -1201,7 +1201,7 @@ function mineCut(x,y,w,h,rot){rot=rot||0;const a=[];let rk=0,ot=0;for(let j=0;j<
    for(let j=-37;j<h+37;j++)for(let i=-37;i<w+37;i++){const X=x+i,Y=y+j;if(!inb(X,Y)||(i>=0&&j>=0&&i<w&&j<h))continue;const k=idx(X,Y),g0=S.ground[k];if(g0===WA||g0===SA||g0>=7||bGrid[k])continue;
      if(S.hgt[k]>=3&&g0!==RK&&g0!==SN&&hash(X,Y,91)<.55)S.ground[k]=RK;else if(S.hgt[k]<2&&(g0===RK||g0===SN))S.ground[k]=DI;
      const o=objGrid[k];if(o&&S.objs[o]&&(S.ground[k]===RK))removeObj(S.objs[o])}}
-  terrDirty=true;objDirty=decorDirty=true}
+  terrDirty=true;terrAll=true;objDirty=decorDirty=true}
 /* ---------- złoża rud w górach: generowane przy tworzeniu świata, ukryte do odkrycia chatą poszukiwacza ---------- */
 const OREK={iron:['Żelazo','#b5543a'],coal:['Węgiel','#2a2a30'],gold:['Złoto','#f2c230'],silver:['Srebro','#d8dce6']};
 const OREQ=[0,.7,1,1.4];
@@ -1242,7 +1242,7 @@ function canZone(x,y,w,h,obs){if(!inb(x,y))return false;const h0=S.hgt[idx(x,y)]
 function blockedB(b){const [w,h]=dims(b);for(let j=0;j<h;j++)for(let i=0;i<w;i++){const o=S.objs[objGrid[idx(b.x+i,b.y+j)]];if(o&&o.type!=='sapling'&&o.type!=='stump')return o}return null}
 /* port morski: ląd pod nabrzeżem jest wyrównywany do mediany, a woda w obrysie zamieniana na nasyp (piasek) */
 function seaLevel(x,y,w,h){const a=[];for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=idx(x+i,y+j);if(S.ground[k]!==WA)a.push(S.hgt[k])}a.sort((p,q)=>p-q);const t=a.length?a[a.length>>1]:.2;
-  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=idx(x+i,y+j);if(S.ground[k]===WA){S.ground[k]=SA;const o=objGrid[k];if(o&&S.objs[o])removeObj(S.objs[o])}S.hgt[k]=t}terrDirty=true;objDirty=decorDirty=true}
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=idx(x+i,y+j);if(S.ground[k]===WA){S.ground[k]=SA;const o=objGrid[k];if(o&&S.objs[o])removeObj(S.objs[o])}S.hgt[k]=t}terrDirty=true;terrAll=true;objDirty=decorDirty=true}
 function placeBlueprint(type,x,y,instant,v,rot,extra){
   const b={id:nid(),type,x,y,v:v===undefined?Math.floor(rnd()*5):v,rot:rot||0,built:false,progress:0,delivered:{},incoming:{},builders:[],res:0,...(extra||{})};
   const [w,h]=dims(b);
@@ -1791,7 +1791,7 @@ function runTask(s,dt){
       t.delivered=true;s.carry=null;finish(s);return}
     case 'build':{
       const b=S.buildings[t.bid];if(!b||b.built||b.hold){finish(s);return}
-      s.working=BDEF[b.type].zone==='field'?'hoe':'hammer';b.progress+=BDEF[b.type].zone?dt*workMul(s)/workOf(b)*(BDEF[b.type].zone==='field'?1:(s.job==='budowniczy'?1:.5)):dt*workMul(s)*(1+fxSum('build'))/1.6*(s.job==='budowniczy'?1:.5)/(130+4.7*workOf(b));/* budynek: ~pół dnia (300 s) dla typowego, jeden budowniczy */
+      s.working=BDEF[b.type].zone==='field'?'hoe':'hammer';b.progress+=isRoadT(b.type)?dt*workMul(s)*(1+fxSum('build'))/5:BDEF[b.type].zone?dt*workMul(s)/workOf(b)*(BDEF[b.type].zone==='field'?1:(s.job==='budowniczy'?1:.5)):dt*workMul(s)*(1+fxSum('build'))/1.6*(s.job==='budowniczy'?1:.5)/(130+4.7*workOf(b));/* budynek: ~pół dnia (300 s) dla typowego, jeden budowniczy */
       if(b.progress>=1){toolWear(s);finish(s);completeBuilding(b)}return}
     case 'farm':{
       const b=S.buildings[t.bid];if(!b||!b.ts){finish(s);return}
@@ -3135,7 +3135,7 @@ const bgCache={};const boxG=(w,h,d)=>{const k=w+'|'+h+'|'+d;return bgCache[k]||(
 function box(w,h,d,hex,x,y,z){const m=new THREE.Mesh(boxG(w,h,d),lm(hex));m.position.set(x*V,y*V,z*V);m.castShadow=true;return m}
 
 /* ---------- terrain ---------- */
-let topMesh=null,sideMesh=null,terrTex=null;
+let topMesh=null,sideMesh=null,terrTex=null,TS=null;
 const hg=(x,y)=>inb(x,y)?S.hgt[idx(x,y)]:-.95;
 function buildTerrain3D(){
   const disp=g=>{if(!g)return;scene.remove(g);g.children.forEach(m=>m.geometry.dispose())};
@@ -3153,7 +3153,7 @@ function buildTerrain3D(){
     for(let k=0;k<4;k++)Nn[pi+k*3+1]=1;
     const ci=((y/CH)|0)*CX+((x/CH)|0);cIdx[ci].push(v,v+3,v+1,v+1,v+3,v+2);if(h<cmin[ci])cmin[ci]=h;if(h>cmax[ci])cmax[ci]=h;
   }
-  for(let ci=0;ci<CX*CY;ci++){const tg=new THREE.BufferGeometry();tg.setAttribute('position',pA);tg.setAttribute('uv',uA);tg.setAttribute('normal',nA);tg.setIndex(new THREE.BufferAttribute(new Uint32Array(cIdx[ci]),1));
+  const topG=[];for(let ci=0;ci<CX*CY;ci++){const tg=topG[ci]=new THREE.BufferGeometry();tg.setAttribute('position',pA);tg.setAttribute('uv',uA);tg.setAttribute('normal',nA);tg.setIndex(new THREE.BufferAttribute(new Uint32Array(cIdx[ci]),1));
     const cx=(ci%CX)*CH,cy=((ci/CX)|0)*CH,w=Math.min(CH,MW-cx),d=Math.min(CH,MH-cy),yc=(cmin[ci]+cmax[ci])/2;
     tg.boundingSphere=new THREE.Sphere(new THREE.Vector3(cx+w/2,yc,cy+d/2),Math.hypot(w/2,d/2,(cmax[ci]-cmin[ci])/2)+.5);
     const m=new THREE.Mesh(tg,topMat);m.receiveShadow=true;topMesh.add(m);const mr=new THREE.Mesh(tg,topMatR);mr.layers.set(1);topMesh.add(mr)}
@@ -3164,7 +3164,7 @@ function buildTerrain3D(){
   const strip={[GR]:'#4f8433',[DI]:'#7a5a38',[PA]:'#7a766e',[SA]:'#d2b67a',[WA]:'#4a3a28',[RK]:'#8a8892',[SN]:'#f2f5fa'};
   const body={[GR]:'#6b4a2e',[DI]:'#6b4a2e',[PA]:'#6b4a2e',[SA]:'#c09c62',[WA]:'#4a3a28',[RK]:'#767480',[SN]:'#b8c4d8'};
   const sideMat=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});seasonPatch(sideMat,true);sideMesh=new THREE.Group();
-  for(let ci=0;ci<CX*CY;ci++){const cx0=(ci%CX)*CH,cy0=((ci/CX)|0)*CH;SP=[];SN=[];SC=[];
+  const sideM=[];const sideChunk=ci=>{const cx0=(ci%CX)*CH,cy0=((ci/CX)|0)*CH;SP=[];SN=[];SC=[];
   for(let y=cy0;y<Math.min(MH,cy0+CH);y++)for(let x=cx0;x<Math.min(MW,cx0+CH);x++){
     const h=hg(x,y),g=S.ground[idx(x,y)],k=.92+hash(x,y,11)*.16;if(g===WA&&SDa[y*MW+x]>3)continue;
     for(const [dx,dz,ax,az,bx,bz] of [[1,0,x+1,y,x+1,y+1],[-1,0,x,y+1,x,y],[0,1,x+1,y+1,x,y+1],[0,-1,x,y,x+1,y]]){const nh=hg(x+dx,y+dz);if(nh>=h-1e-4)continue;
@@ -3175,9 +3175,37 @@ function buildTerrain3D(){
       else if(h-sh>nh)quad(ax,az,bx,bz,nh,h-sh,dx,dz,body[g],k*(.9+.1*((x+y)&1)))}
   }
   if(SP.length){const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute(SP,3));sg.setAttribute('normal',new THREE.Float32BufferAttribute(SN,3));sg.setAttribute('color',new THREE.Float32BufferAttribute(SC,3));sg.computeBoundingSphere();
-    const m=new THREE.Mesh(sg,sideMat);m.receiveShadow=true;m.castShadow=true;sideMesh.add(m)}}
-  scene.add(sideMesh);
+    const m=new THREE.Mesh(sg,sideMat);m.receiveShadow=true;m.castShadow=true;sideMesh.add(m);sideM[ci]=m}};for(let ci=0;ci<CX*CY;ci++)sideChunk(ci);
+  scene.add(sideMesh);TS={P,pA,SDa,CX,CY,CH,cmin,cmax,topG,sideM,sideChunk};terrSnap();
   try{buildFar()}catch(e){console.error('buildFar',e)}
+}
+
+/* częściowa przebudowa terenu: tylko kafelki i bloki wokół zmienionego prostokąta (zamiast całej mapy) */
+let TSNAP=null;
+function terrSnap(){TSNAP={g:S.ground.slice(),h:S.hgt.slice()}}
+/* odświeża teren tylko tam, gdzie od ostatniej budowy zmieniło się podłoże lub wysokość (wzrost osad SI); false = trzeba pełnej przebudowy */
+function terrDiffRebuild(){
+  const T=TS;if(!T||!TSNAP||TSNAP.g.length!==S.ground.length)return false;
+  const CH=T.CH,CX=T.CX,rects=new Map(),g=S.ground,h=S.hgt,og=TSNAP.g,oh=TSNAP.h;
+  for(let i=0;i<g.length;i++){if(g[i]!==og[i]||h[i]!==oh[i]){if(g[i]===WA||og[i]===WA)return false;const x=i%MW,y=(i/MW)|0,ci=((y/CH)|0)*CX+((x/CH)|0);const r=rects.get(ci);
+    if(!r)rects.set(ci,{x0:x,y0:y,x1:x,y1:y});else{if(x<r.x0)r.x0=x;if(x>r.x1)r.x1=x;if(y<r.y0)r.y0=y;if(y>r.y1)r.y1=y}}}
+  if(rects.size>16)return false;
+  for(const r of rects.values()){if(r.x0<=3||r.y0<=3||r.x1>=MW-4||r.y1>=MH-4)return false}
+  for(const r of rects.values()){for(let y=r.y0-1;y<=r.y1+1;y++)for(let x=r.x0-1;x<=r.x1+1;x++)if(inb(x,y))paintTile(x,y);buildTerrainPart({x0:r.x0-2,y0:r.y0-2,x1:r.x1+2,y1:r.y1+2})}
+  terrSnap();return true}
+function buildTerrainPart(r){
+  const T=TS;if(!T||!topMesh||!sideMesh)return buildTerrain3D();
+  const x0=Math.max(0,r.x0),y0=Math.max(0,r.y0),x1=Math.min(MW-1,r.x1),y1=Math.min(MH-1,r.y1);
+  if(x0<=2||y0<=2||x1>=MW-3||y1>=MH-3)return buildTerrain3D();
+  const {P,pA,SDa,CX,CH,cmin,cmax,topG,sideM,sideChunk}=T;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const pi=(y*MW+x)*12;let h=hg(x,y);if(S.ground[y*MW+x]===WA)h-=.5*Math.max(0,Math.min(1,(SDa[y*MW+x]-3)/14));P[pi+1]=P[pi+4]=P[pi+7]=P[pi+10]=h}
+  pA.updateRange.offset=(y0*MW+x0)*12;pA.updateRange.count=((y1*MW+x1)-(y0*MW+x0)+1)*12;pA.needsUpdate=true;
+  for(let cy=(y0/CH)|0;cy<=((y1/CH)|0);cy++)for(let cx=(x0/CH)|0;cx<=((x1/CH)|0);cx++){const ci=cy*CX+cx;let mn=1e9,mx=-1e9;
+    const ax=cx*CH,ay=cy*CH,bx=Math.min(MW,ax+CH),by=Math.min(MH,ay+CH);
+    for(let y=ay;y<by;y++)for(let x=ax;x<bx;x++){const h=P[(y*MW+x)*12+1];if(h<mn)mn=h;if(h>mx)mx=h}
+    cmin[ci]=mn;cmax[ci]=mx;const w=bx-ax,d=by-ay,tg=topG[ci];tg.boundingSphere=new THREE.Sphere(new THREE.Vector3(ax+w/2,(mn+mx)/2,ay+d/2),Math.hypot(w/2,d/2,(mx-mn)/2)+.5)}
+  for(let cy=Math.max(0,((y0-1)/CH)|0);cy<=((y1+1)/CH|0);cy++)for(let cx=Math.max(0,((x0-1)/CH)|0);cx<=((x1+1)/CH|0);cx++){const ci=cy*CX+cx,o=sideM[ci];if(o){sideMesh.remove(o);o.geometry.dispose();sideM[ci]=null}sideChunk(ci)}
+  terrSnap();
 }
 
 /* ---------- daleki teren i lasy poza mapą (tylko mapy lądowe) ---------- */
@@ -9211,7 +9239,7 @@ function neighConsSync(t){let done=false;
   for(const c of NCONS){const p=(S.time-c.t0)/NCONS_D;if(p>=1){done=true;continue}const k=Math.max(0,Math.min(1,(p-.08)/.84));c.mesh.scale.y=Math.max(.03,Math.ceil(k*14)/14);c.mesh.visible=p>.04;if(c.sc)c.sc.visible=true}
   for(const f of NFLAGS){f.m.rotation.y=Math.sin(t*2.1+f.ph)*.32;f.m.scale.x=.88+Math.sin(t*3.1+f.ph)*.1}
   if(done){NCONS.length=0;neighGrew=true}}
-function neighGrowRebuild(){paintTerrain();fieldDirty=true;buildTerrain3D();syncNeighVillages()}
+function neighGrowRebuild(){if(!terrDiffRebuild()){paintTerrain();buildTerrain3D()}fieldDirty=true;syncNeighVillages()}
 
 /* ---- osady SI rosną od zera: na starcie kilka chat, studnia i pierwsze pole; reszta powstaje z dnia na dzień ---- */
 function neighFields(n,R,occ){
@@ -10762,7 +10790,7 @@ function applyArea(x0,y0,x1,y1){
       const b=S.buildings[bGrid[idx(x,y)]];if(b&&!b.built){removeBuilding(b,true);n++}
     }
   }
-  if((tool==='flat'||tool==='raise'||tool==='lower')&&n){terrDirty=true;decorDirty=true;msg(tool==='flat'?`Wyrównano ${n} pól`:tool==='raise'?`Podniesiono ${n} pól`:`Obniżono ${n} pól`,'good')}
+  if((tool==='flat'||tool==='raise'||tool==='lower')&&n){terrDirty=true;terrAll=true;decorDirty=true;msg(tool==='flat'?`Wyrównano ${n} pól`:tool==='raise'?`Podniesiono ${n} pól`:`Obniżono ${n} pól`,'good')}
   objDirty=true;if(tool==='cancel'&&n)msg(`Odwołano ${n} poleceń`);
 }
 
@@ -10979,7 +11007,7 @@ const STONEY=new Set(['katedra','kosciol','maly_kosciol','kaplica','donjon','kos
 function flamOf(b){const d=BDEF[b.type];if(d.zone||d.flat)return 0;if(STONEY.has(b.type))return .12;let f=1;if(b.type==='chalupa'&&(b.v||0)%2)f=1.4;if(/spichlerz|stajnia|szalas|chata/.test(b.type))f=1.3;return f}
 function strazCover(b){let best=0;for(const q of Object.values(S.buildings))if(q.built&&q.type==='straz'&&workersOf(q).length>0){const d=Math.hypot(q.x-b.x,q.y-b.y);if(d<40)best=Math.max(best,1-d/55)}return best}
 function wellNear(b){let r=1;for(const q of Object.values(S.buildings))if(q.built&&BDEF[q.type].n.startsWith('Studnia')&&Math.hypot(q.x-b.x,q.y-b.y)<16){r=.55;break}return r}
-function igniteB(b,why){if(b.fire||!b.built)return;b.fire={int:.35,dmg:0,src:null};
+function igniteB(b,why){if(b.fire||!b.built)return;if(b.wet&&b.wet>S.time)return;b.fire={int:.35,dmg:0,src:null};
   const [bw,bh]=dims(b);for(const s of S.settlers)if(s.hidden&&s.x>=b.x-1&&s.x<=b.x+bw&&s.y>=b.y-1&&s.y<=b.y+bh&&s.task){finish(s);think(s,'Pożar w budynku!',-8,DAY)}
   for(const s of S.settlers)if(s.home===b.id)think(s,'Płonie mój dom!',-10,DAY*2);
   msg(`Pożar! Płonie: ${BDEF[b.type].n}.${why?' '+why:''}`,'bad');try{const l=logEl.firstChild;if(l){l.classList.add('go');l.title='Kliknij, aby przejść do pożaru';l.onclick=()=>{centerOn((b.x+bw/2)*TILE,(b.y+bh/2)*TILE)}}}catch(e){}}
@@ -10994,7 +11022,7 @@ function fireTick(dt){
   for(const b of Object.values(S.buildings)){if(b.fire){burning.push(b)}
     else if(b.built&&!(S.noFire)){const d=BDEF[b.type];let src=FIRESRC[b.type]||0;if(d.beds&&b.warm&&season().i===3)src=.18;if(!src)continue;
       if(!workersOf(b).length&&!d.beds)continue;
-      const p=D*.025/DAY*src*flamOf(b)*(season().i===1?1.3:1)*wellNear(b)*(1-strazCover(b)*.7);if(rnd()<p)igniteB(b,'Iskra podpaliła dach.')}}
+      const p=D*.006/DAY*src*flamOf(b)*(season().i===1?1.3:1)*wellNear(b)*(1-strazCover(b)*.7);if(rnd()<p)igniteB(b,'Iskra podpaliła dach.')}}
   for(const b of burning){const f=b.fire;
     f.int=Math.min(1,f.int+D*.04);f.dmg+=D*f.int/(DAY*.3);
     /* rozprzestrzenianie: sąsiednie budynki w odległości do 3 kratek, z wiatrem szybciej */
@@ -11002,7 +11030,8 @@ function fireTick(dt){
     if(f.int>.4)for(const n of Object.values(S.buildings)){if(n===b||!n.built||n.fire)continue;const fl=flamOf(n);if(!fl)continue;const [nw,nh]=dims(n);
       const gx=Math.max(0,Math.max(b.x-(n.x+nw),n.x-(b.x+bw))),gy=Math.max(0,Math.max(b.y-(n.y+nh),n.y-(b.y+bh))),g=Math.hypot(gx,gy);if(g>3)continue;
       const dx=(n.x+nw/2)-(b.x+bw/2),dz=(n.y+nh/2)-(b.y+bh/2),dl=Math.hypot(dx,dz)||1,wf=1+.7*W[2]*((dx*W[0]+dz*W[1])/dl);
-      const p=D*.1*fl*(1-g/4)*Math.max(.2,wf)*f.int*(1-strazCover(n)*.6);if(rnd()<p)igniteB(n,'Ogień przeniósł się z sąsiedniego budynku.')}
+      if(n.wet&&n.wet>S.time)continue;let fgt=0;for(const s of S.settlers)if(s.task&&s.task.type==='fire'&&s.task.bid===n.id)fgt++;
+      const p=D*.03*fl*(1-g/4)*Math.max(.2,wf)*f.int*(1-strazCover(n)*.6)*(fgt?.35:1);if(rnd()<p)igniteB(n,'Ogień przeniósł się z sąsiedniego budynku.')}
     if(f.dmg>=1){const rid=b.id,nm=BDEF[b.type].n;S.burn=S.burn||[];S.burn.push({x:b.x,y:b.y,w:bw,h:bh,t:S.time});
       for(const s of S.settlers)if(s.home===b.id)think(s,'Dom spłonął',-14,DAY*3);
       if(b.store)for(const r in b.store)b.store[r]=Math.floor((b.store[r]||0)*.5);
@@ -11021,7 +11050,7 @@ function fireTaskTick(s,t,dt){const b=S.buildings[t.bid];if(!b||!b.fire){finish(
   if(t.st==='src'){s.working='basket';t.p+=dt;if(t.p>=1.1){t.p=0;t.st='dst';const [w,h]=dims(b);if(!travel(s,t,adjGoal(b.x,b.y,w,h),b.x,b.y)){finish(s);return}}return}
   if(t.st==='dst'){const [w,h]=dims(b);s.faceTo=[b.x+w/2,b.y+h/2];s.working='hoe';t.p+=dt;
     if(t.p>=1.4){t.p=0;b.fire.int=Math.max(0,b.fire.int-.09*(s.job==='strazak'?2:1)*Math.min(1.6,workMul(s)));
-      if(b.fire.int<=0.02){b.fire=null;think(s,'Ugasił'+sx(s,'','a')+' pożar',8,DAY*2);msg(`Pożar ugaszony: ${BDEF[b.type].n}.`,'good');finish(s);return}
+      if(b.fire.int<=0.02){b.fire=null;b.wet=S.time+DAY*3;think(s,'Ugasił'+sx(s,'','a')+' pożar',8,DAY*2);msg(`Pożar ugaszony: ${BDEF[b.type].n}.`,'good');finish(s);return}
       t.st='src';if(!travel(s,t,nearGoal(t.src[0],t.src[1]),t.src[0],t.src[1]))finish(s)}}}
 /* wizualizacja ognia, dymu i zwęglonych śladów */
 const FIREIM=new THREE.InstancedMesh(new THREE.BoxGeometry(.11,.11,.11),new THREE.MeshBasicMaterial({color:0xffffff}),1200);FIREIM.frustumCulled=false;FIREIM.count=0;scene.add(FIREIM);
@@ -11766,7 +11795,7 @@ function frame(now){
     if(keys.has('d')||keys.has('arrowright')){camS.tx+=rx*ps;camS.tz+=rz*ps}if(keys.has('a')||keys.has('arrowleft')){camS.tx-=rx*ps;camS.tz-=rz*ps}
     if(keys.has('q'))camS.yaw+=dt*1.8;if(keys.has('e'))camS.yaw-=dt*1.8;clampCam()}
   if(!EVT.open&&!S.cat)eventTick();acc+=S.cat?0:dt*speed;let n=0;const STEP=1/30;while(acc>=STEP&&n<12){optT('SIM',()=>update(STEP));acc-=STEP;n++}if(n>=12)acc=0;const pf1=performance.now();
-  if(terrDirty){terrDirty=false;buildTerrain3D()}
+  if(terrDirty){terrDirty=false;const tr=terrRect,ta=terrAll;terrRect=null;terrAll=false;if(ta||!tr)buildTerrain3D();else buildTerrainPart(tr)}
   optT('sky',()=>updateSky());try{syncWeather(dt);syncGround(dt)}catch(e){}optT('decor',()=>syncDecor());syncOre(S.time);buildFx(S.time);syncGuards(S.time);optT('obj',()=>syncObjs(t));optT('crops',()=>syncCrops());optT('bud',()=>{syncBuildings(t,dt);syncBuildFolk(t,dt)});try{syncCraftIcons(t,dt)}catch(e){if(!window._ciErr){window._ciErr=1;console.error('ci',e)}}try{syncGfx(t,dt)}catch(e){if(!window._gfErr){window._gfErr=1;console.error('gfx',e)}}syncPiers();if(!window.DEMO_ON){optT('osadn',()=>{syncSettlers(dt,t);syncFire(t,dt)});syncMerchant(dt);syncNeighFolk(dt,t);syncTrav(dt,t);syncJFish(dt);syncFog(dt,t);syncSnow(dt);try{v76Sync(dt,t)}catch(e){if(!window._v76E){window._v76E=1;console.error('v76',e)}}try{syncClouds(dt)}catch(e){}try{syncSeaLife(dt,t)}catch(e){if(!window._slErr){window._slErr=1;console.error('sea',e)}}try{neighConsSync(t)}catch(e){}syncNeighFest(dt,t);if(neighGrew){neighGrew=false;neighGrowRebuild()}updFalls(dt);optT('dzik',()=>syncWild(dt*Math.min(speed,2)));optT('zwierz',()=>syncAnimals(t,dt));syncFish(t,dt)}syncShips(t);optT('fx',()=>syncFx(t));syncOverlay();placeCamera();
   try{AUDIO.tick(dt)}catch(e){}
   SEAS_U.uCam.value.copy(camera.position);SEAS_U.uSunW.value.copy(SUNV);const pf2=performance.now();optPre();try{reflUpdate()}catch(e){WU.uRk.value=0;if(!window._reflErr){window._reflErr=String(e);console.error(e)}}renderer.render(scene,camera);syncLabels();const pf3=performance.now();perfTick(pf3-pf0,pf1-pf0,pf2-pf1,pf3-pf2);
