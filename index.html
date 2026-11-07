@@ -1063,12 +1063,14 @@ function dropItem(x,y,res,amt){
   for(const it of Object.values(S.items))if(it.x===x&&it.y===y&&it.res===res&&!it.r){it.amt+=amt;return it}
   const it={id:nid(),x,y,res,amt,r:0};S.items[it.id]=it;return it;
 }
-function magazines(){return Object.values(S.buildings).filter(b=>b.built&&BDEF[b.type].store)}
+let _mgG=-1,_mg=[],_mgk={};
+function magazines(){if(_mgG===pcG&&pcG>0)return _mg;_mgG=pcG;_mgk={};return _mg=Object.values(S.buildings).filter(b=>b.built&&BDEF[b.type].store)}
 const FOODSET=new Set([...FOOD_ORDER,'flour','beer']);
 function magOK(m,res){const k=BDEF[m.type].kind;if(!k)return true;const wf=FOODSET.has(res);if((k==='food')===wf)return true;
-  return !Object.values(S.buildings).some(b=>b.built&&BDEF[b.type].store&&((BDEF[b.type].kind==='food')===wf)&&BDEF[b.type].kind)}
+  magazines();const ck=wf?1:0;if(_mgk[ck]===undefined)_mgk[ck]=!_mg.some(b=>((BDEF[b.type].kind==='food')===wf)&&BDEF[b.type].kind);return _mgk[ck]}
 const capOf=m=>Math.round(BDEF[m.type].store*(1+.5*(m.lv||0)));
-function stock(){const t=emptyStore();for(const m of magazines())for(const r of RES)t[r]+=m.store[r]||0;return t}
+let _stG=-1,_stV=null;
+function stock(){if(_stG===pcG&&pcG>0&&_stV)return Object.assign({},_stV);const t=emptyStore();for(const m of magazines())for(const r of RES)t[r]+=m.store[r]||0;_stG=pcG;_stV=t;return Object.assign({},t)}
 function magUsed(m){let u=0;for(const r of RES)if(r!=='coins')u+=m.store[r]||0;return u}
 
 /* ============================== pathfinding ============================== */
@@ -1081,11 +1083,16 @@ function hPop(){const top=HN[0];const n=HN[--hLen],f=HF[hLen];if(hLen>0){let i=0
 let pcS=new Uint32Array(MW*MH),pcV=new Uint8Array(MW*MH);let pcG=1;
 function passC(x,y){if(x<0||y<0||x>=MW||y>=MH)return false;const i=y*MW+x;if(pcS[i]===pcG)return pcV[i]===1;const v=passable(x,y);pcS[i]=pcG;pcV[i]=v?1:0;return v}
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],DX8=[1,-1,0,0,1,1,-1,-1],DY8=[0,0,1,-1,1,-1,1,-1];
-function findPath(sx2,sy2,goal,tx,ty){const _t=performance.now();try{return findPath0(sx2,sy2,goal,tx,ty)}finally{const d=performance.now()-_t;if(d>(OTM.PATH||0))OTM.PATH=d;OTM.PATHn=(OTM.PATHn||0)+1}}
+/* pamięć nieudanych szukań: ten sam cel z tej samej okolicy nie jest liczony ponownie przez kilka sekund (nieudane szukanie przegląda do 40000 pól) */
+const NEGP=new Map();let pathSpent=0,pathDef=false,pathBudgetG=-1;
+function findPath(sx2,sy2,goal,tx,ty){const _t=performance.now();
+  const nk=(((sx2>>3)*1024+(sy2>>3))*4096+(tx|0))*4096+(ty|0),ne=NEGP.get(nk);if(ne!==undefined&&ne>S.time){OTM.PATHn=(OTM.PATHn||0)+1;return null}
+  if(pathBudgetG!==pcG){pathBudgetG=pcG;pathSpent=0}else if(pathSpent>5){pathDef=true;return null}
+  try{const r=findPath0(sx2,sy2,goal,tx,ty);if(!r){if(NEGP.size>6000)NEGP.clear();NEGP.set(nk,S.time+6)}return r}finally{const d=performance.now()-_t;pathSpent+=d;if(d>(OTM.PATH||0))OTM.PATH=d;OTM.PATHn=(OTM.PATHn||0)+1}}
 function findPath0(sx2,sy2,goal,tx,ty){
   sx2=Math.max(0,Math.min(MW-1,sx2));sy2=Math.max(0,Math.min(MH-1,sy2));
   gen++;hLen=0;const s=sy2*MW+sx2;gA[s]=0;stamp[s]=gen;came[s]=-1;
-  const hh=(x,y)=>{const dx=Math.abs(x-tx),dy=Math.abs(y-ty);return (Math.max(dx,dy)+.414*Math.min(dx,dy))*.7};
+  const hh=(x,y)=>{const dx=Math.abs(x-tx),dy=Math.abs(y-ty);return (Math.max(dx,dy)+.414*Math.min(dx,dy))*1.0};
   hPush(s,hh(sx2,sy2));let it=0;
   while(hLen>0&&it++<40000){
     const cur=hPop();if(closed[cur]===gen)continue;closed[cur]=gen;
@@ -1567,10 +1574,10 @@ function pickWork(s){
   const ok=k=>!(s.bl[k]>now);
   const add=(cat,x,y,key,fn,bonus=0)=>{const p=pri[cat];if(!p||!ok(key))return;cands.push({sc:p*1000-(Math.abs(x-sx2)+Math.abs(y-sy2))*4+bonus,key,fn})};
   const pop=S.settlers.length,foodLow=foodTotal(st)<pop*3;
-  const pend={};for(const it of Object.values(S.items))if(it.src)pend[it.src]=(pend[it.src]||0)+it.amt;
+  const pend=pendNow();
   const hut=s.job==='zbieracz'&&s.work?S.buildings[s.work]:null;
-  if(pri.chop||pri.mine||pri.forage)for(const o of Object.values(S.objs)){
-    if(o.res)continue;
+  if(pri.chop||pri.mine||pri.forage)for(const o of interestObjs()){
+    if(o.res||S.objs[o.id]!==o)continue;
     if(o.type==='felled'||(TREES[o.type]&&o.mark))add('chop',o.x,o.y,'o'+o.id,()=>startGather(s,o,'chop'),o.type==='felled'?50:0);
     else if((o.type==='rock'||o.type==='ore')&&o.mark)add('mine',o.x,o.y,'o'+o.id,()=>startGather(s,o,'mine'));
     else if(o.type==='mushroom'&&(o.mark||(hut&&Math.abs(o.x-hut.x)+Math.abs(o.y-hut.y)<90)))add('forage',o.x,o.y,'o'+o.id,()=>startGather(s,o,'forage'),30);
@@ -1613,9 +1620,11 @@ function pickWork(s){
   }
   if(!cands.length)return false;
   cands.sort((a,b)=>b.sc-a.sc);
-  for(let i=0;i<Math.min(4,cands.length);i++){if(cands[i].fn())return true;s.bl[cands[i].key]=now+DAY*.08}
+  pathDef=false;for(let i=0;i<Math.min(4,cands.length);i++){if(cands[i].fn())return true;if(pathDef){pathDef=false;return false}s.bl[cands[i].key]=now+DAY*.08}
   return false;
 }
+let _pdG=-1,_pd={};function pendNow(){if(_pdG===pcG&&pcG>0)return _pd;_pdG=pcG;const p={};for(const it of Object.values(S.items))if(it.src)p[it.src]=(p[it.src]||0)+it.amt;return _pd=p}
+let _oiG=-1,_oi=[];function interestObjs(){if(pcG-_oiG>=30||pcG<_oiG){_oiG=pcG;_oi=[];for(const o of Object.values(S.objs)){if(o.res)continue;const t=o.type;if(t==='felled'||t==='mushroom'||t==='bush'||((t==='rock'||t==='ore')&&o.mark)||(TREES[t]&&o.mark))_oi.push(o)}}return _oi}
 function tryEat(s){
   for(const f of FOOD_ORDER){const m=nearestMag(s,m=>(m.store[f]||0)>0);if(!m)continue;if(f==='grain'&&s.hunger>15)continue;const t={type:'eat',mid:m.id,food:f};s.task=t;if(travel(s,t,magGoal(m),m.x,m.y))return true;s.task=null}
   let gi=null,gd=1e9;for(const it of Object.values(S.items)){if(FOOD[it.res]&&!it.r){const d=Math.abs(it.x-s.x)+Math.abs(it.y-s.y);if(d<gd){gd=d;gi=it}}}
@@ -1626,7 +1635,7 @@ function tryEat(s){
 }
 function campfire(){return Object.values(S.buildings).find(b=>b.type==='ognisko'&&b.built)}
 function nearestB(s,pred){let best=null,bd=1e9;for(const b of Object.values(S.buildings)){if(!b.built||!pred(b))continue;const d=Math.hypot(b.x-s.x,b.y-s.y);if(d<bd){bd=d;best=b}}return best}
-function wander(s,ox,oy,r,type){for(let k=0;k<6;k++){const x=ox+Math.round((rnd()*2-1)*r),y=oy+Math.round((rnd()*2-1)*r);if(passLand(x,y)&&spotFree(x,y,s)){const t={type,wait:2+rnd()*4};s.task=t;if(travel(s,t,(a,b)=>a===x&&b===y,x,y))return}}s.task={type,wait:2}}
+function wander(s,ox,oy,r,type){let fl=0;for(let k=0;k<6&&fl<2;k++){const x=ox+Math.round((rnd()*2-1)*r),y=oy+Math.round((rnd()*2-1)*r);if(passLand(x,y)&&spotFree(x,y,s)){const t={type,wait:2+rnd()*4};s.task=t;if(travel(s,t,(a,b)=>a===x&&b===y,x,y))return;fl++}}s.task={type,wait:2+rnd()*3}}
 
 /* ---------- leisure & social ---------- */
 function leisurePOIs(){const out=[];for(const b of Object.values(S.buildings)){if(!b.built)continue;const d=BDEF[b.type];
@@ -8457,7 +8466,7 @@ const TRI={};function optProfile(){for(const k in TRI)delete TRI[k];const top=ne
   return Object.keys(c).filter(k=>!k.endsWith('#')).sort((a,b)=>c[b]-c[a]).map(k=>`${k} ${c[k]} (cień ${c[k+'#']}) tr ${(TRI[k]/1e6).toFixed(2)}M`).join('\n')}
 function optMoveT(base){return OPT.moveK>0?Math.max(base,viewRadius()*OPT.moveK):base}
 OPT.treeK=0.7;const TREEKS=[1e9,1.2,.7,.45];function optTreeCycle(){const i=TREEKS.indexOf(OPT.treeK);OPT.treeK=TREEKS[(i+1)%TREEKS.length];objDirty=true}
-OPT.bLodD=60;const BLODSTEPS=[40,60,100,1e9];
+OPT.instNear=true;OPT.bLodD=60;const BLODSTEPS=[40,60,100,1e9];
 function optBuildingLOD(){const D=OPT.bLodD,d2=D*D,cp=camera.position;
   for(const rec of bRec.values()){if(!rec.g.visible)continue;const far=D<1e8&&cp.distanceToSquared(rec.g.position)>d2;if(!far)continue;
     if(rec.wins&&!NIGHTW)for(const m of rec.wins)m.visible=false;
@@ -8796,9 +8805,10 @@ function armsSync(){const A=(S&&S.arms)||DEFARMS,sig=A.f+A.a+A.b+A.c+A.k;
   if(!BANNERMAT)return;if(sig===BANSIG)return;BANSIG=sig;const c=BANTEX.image,x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.drawImage(armsImage(A,60,44,'rect'),0,0);BANTEX.needsUpdate=true}
 function localToWorld(b,M,lx,ly,lz){const [fw,fh]=dims(b);const px=lx*V-M.W/2,pz=lz*V-M.D/2;const th=(b.rot||0)*Math.PI/2,c=Math.cos(th),s=Math.sin(th);return [b.x+fw/2+px*c+pz*s,hg(b.x,b.y)+ly*V,b.y+fh/2-px*s+pz*c]}
 const bRec=new Map();
-let NIGHTW=false;const FARBG=new Map(),_fm=new THREE.Matrix4(),_fr=new THREE.Matrix4();
+let NIGHTW=false;const FARW=new Map(),FARBG=new Map(),_fm=new THREE.Matrix4(),_fr=new THREE.Matrix4();
 function farBput(rec,b,by){const M=rec.M,g=M.geo;let e=FARBG.get(g);if(!e){e={im:IM(g,matB,1500),n:0};FARBG.set(g,e)}if(e.n>=1500){rec.body.visible=true;return}
   if(rec.fby!==by||!rec.fm){const [fw,fh]=dims(b);rec.fby=by;rec.fm=rec.fm||new THREE.Matrix4();rec.fm.makeTranslation(b.x+fw/2,by,b.y+fh/2);_fr.makeRotationY((b.rot||0)*Math.PI/2);rec.fm.multiply(_fr);_fr.makeTranslation(-M.W/2,0,-M.D/2);rec.fm.multiply(_fr)}
+  if(M.wins&&!NIGHTW)for(const wg of M.wins){let w=FARW.get(wg);if(!w){w={im:IM(wg,winOff,1500,false),n:0};FARW.set(wg,w)}if(w.n<1500)w.im.setMatrixAt(w.n++,rec.fm)}
   e.im.setMatrixAt(e.n++,rec.fm);rec.body.visible=false;rec.frame.visible=false;rec.arrow.visible=false}
 function makeBuilding3D(b,ghost){
   const M=getModel(b);const [fw,fh]=dims(b);const g=new THREE.Group();g.userData.bid=b.id;
@@ -8895,12 +8905,12 @@ function syncBuildings(t,dt){
   for(const [id,rec] of bRec){const b=S.buildings[id];if(!b||rec.key!==modelKey(b)+'|'+(b.rot||0)){scene.remove(rec.g);if(rec.mir)scene.remove(rec.mir);if(rec.clipMat)rec.clipMat.dispose();if(rec.scafMat)rec.scafMat.dispose();bRec.delete(id)}}
   busyB.clear();insideB.clear();insideN.clear();for(const s of S.settlers){const tt=s.task;if(tt&&tt.bid&&(s.working||s.hidden||s.inside))busyB.add(tt.bid);if(s.hidden&&s.home&&tt&&(tt.type==='sleep'||tt.type==='home')){insideB.add(s.home);insideN.set(s.home,(insideN.get(s.home)||0)+1)}}
   const nf=darkness()/.66,R=Math.max(viewRadius()+26,Math.min(700,camS.dist*4.6+50)),h=hour();NIGHTW=nf>.12;
-  for(const e of FARBG.values())e.n=0;BFX.length=0;BSITES.length=0;const bfD2=OPT.bLodD*OPT.bLodD,bfOn=OPT.bLodD<1e8,cpos=camera.position;
+  for(const e of FARBG.values())e.n=0;for(const e of FARW.values())e.n=0;BFX.length=0;BSITES.length=0;const bfD2=OPT.bLodD*OPT.bLodD,bfOn=OPT.bLodD<1e8,cpos=camera.position;
   for(const b of Object.values(S.buildings)){
     let rec=bRec.get(b.id);if(!rec){rec=makeBuilding3D(b);bRec.set(b.id,rec);scene.add(rec.g)}
     const far=!inView(b.x,b.y,R);rec.g.visible=!far;if(far)continue;
     const d=BDEF[b.type];const by=hg(b.x,b.y);rec.g.position.set(b.x,by,b.y);
-    if(bfOn&&b.built&&!rec.anim&&!(NIGHTW&&rec.wins)&&!(sel&&sel.kind==='building'&&sel.id===b.id)&&cpos.distanceToSquared(rec.g.position)>bfD2){farBput(rec,b,by);continue}
+    if((bfOn||OPT.instNear)&&b.built&&!rec.anim&&!(NIGHTW&&rec.wins)&&!(sel&&sel.kind==='building'&&sel.id===b.id)&&(cpos.distanceToSquared(rec.g.position)>bfD2||(OPT.instNear&&!rec.flags.length&&!rec.banner))){farBput(rec,b,by);continue}
     rec.body.visible=true;
     if(b.built){if(rec.clipMat){rec.main.material=matB;rec.clipMat.dispose();rec.clipMat=null}rec.body.visible=true;rec.main.visible=true}
     else{
@@ -8939,7 +8949,7 @@ function syncBuildings(t,dt){
     if(rec.banner)rec.banner.rotation.y=Math.sin(t*1.5+b.id)*.28;
     if(rec.boat){const sp=b.type==='rybacka'&&!b.pier&&shoreBoat(b);rec.boat.visible=!!sp;if(sp){rec.boat.position.set(sp[0],sp[1],sp[2]);rec.boat.rotation.y=sp[3]+Math.sin(t*.8)*.05}}
   }
-  for(const e of FARBG.values()){e.im.count=e.n;e.im.instanceMatrix.needsUpdate=true}
+  for(const e of FARBG.values()){e.im.count=e.n;e.im.instanceMatrix.needsUpdate=true}for(const e of FARW.values()){e.im.count=e.n;e.im.instanceMatrix.needsUpdate=true}
   try{optBuildingLOD()}catch(e){if(!window._bl){window._bl=1;const d=document.createElement('pre');d.style.cssText='position:fixed;left:0;top:0;z-index:2147483647;background:#a00;color:#fff;font:12px monospace;margin:0;padding:4px';d.textContent='LOD budynkow: '+e.message+' | '+(e.stack||'').split('\n').slice(0,3).join(' / ');document.documentElement.appendChild(d)}}
 }
 const boatCache=new Map();
